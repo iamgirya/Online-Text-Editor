@@ -7,8 +7,7 @@ import 'package:polyscript/ui/styles.dart';
 import '../main.dart';
 import '../model/user.dart';
 
-String startText =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+String startText ="hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh";
 
 class SelectText extends StatefulWidget {
   const SelectText({ Key? key , required this.onClick }) : super(key: key);
@@ -22,23 +21,28 @@ class _SelectTextState extends State<SelectText> {
     final fieldController = TextEditingController();
   final scrollController = ScrollController(initialScrollOffset: 0);
 
-  var textPainter = TextPainter(
-        text: TextSpan(text: startText, style: textStyle),
-        textDirection: TextDirection.ltr,
-      );
+  late TextPainter textPainter;
 
-void kak(){
+void kak() {
   setState(() {
-    fieldController.selection.base;
     if (users.isNotEmpty) {
           users.removeLast();
         }
+      Offset carretPozition;
+      TextPosition selectTextPosition = fieldController.selection.extent;
+      if (selectTextPosition.offset > (textPainter.text as TextSpan).text!.length) {
+        var newPosition = TextPosition(offset: (textPainter.text as TextSpan).text!.length, affinity: selectTextPosition.affinity);
+        carretPozition = textPainter.getOffsetForCaret(newPosition, Rect.zero);
+      }
+      else if (fieldController.text.length != 0 && fieldController.text.codeUnits.last == 10) {
+        print(fieldController.text[fieldController.text.length-1]);
+        carretPozition = textPainter.getOffsetForCaret(fieldController.selection.extent, Rect.zero);
+      }
+      else {
+        carretPozition = textPainter.getOffsetForCaret(fieldController.selection.extent, Rect.zero);
 
-    Offset carretPozition = textPainter.getOffsetForCaret(fieldController.selection.base, Rect.zero);
-
-    users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
-
-    print(carretPozition);
+      }
+      users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
     });
   }
 
@@ -50,29 +54,44 @@ void kak(){
 
     @override
   Widget build(BuildContext context) {
+    
+    textPainter = TextPainter(
+        text: TextSpan(text: fieldController.text, style: textStyle),
+        textDirection: TextDirection.ltr,
+      );
+    
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
 
       final width = constraints.maxWidth;
       textPainter.layout(
-        minWidth: 20,
+        minWidth: 0,
         maxWidth: width,
       );
       final height = textPainter.height;
 
-      return TextField(
-          selectionHeightStyle: BoxHeightStyle.includeLineSpacingMiddle,
-          maxLines: null,
-          decoration: const InputDecoration(contentPadding: EdgeInsets.all(0), isCollapsed: true),
-          controller: fieldController,
-          scrollController: scrollController,
-          style: const TextStyle(
-            fontFamily: "Roboto",
-            fontStyle: FontStyle.normal,
-            fontSize: 16,
-            height: 1.25,
+      return Stack(
+        children: [
+          CustomPaint(
+              size: Size(width, height), // Parent width, text height
+              painter: TextCustomPainter(textPainter),
+            ),
+          TextField(
+            selectionHeightStyle: BoxHeightStyle.includeLineSpacingMiddle,
+            maxLines: null,
+            decoration: const InputDecoration(contentPadding: EdgeInsets.all(0), isCollapsed: true),
+            controller: fieldController,
+            scrollController: scrollController,
+            style: const TextStyle(
+              fontFamily: "Roboto",
+              fontStyle: FontStyle.normal,
+              fontSize: 16,
+              height: 1.25,
+            ),
           ),
-        );
+          
+          ]
+      );
       }
     );
   }

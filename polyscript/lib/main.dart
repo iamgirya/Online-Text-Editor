@@ -76,7 +76,7 @@ class _MainWidgetState extends State<MainWidget> {
     return Container(
       width: 350,
       height: 280,
-      color: Colors.yellow,
+      color: Color.fromARGB(255, 167, 167, 167),
       child: Stack(
           children: [
             SelectText(onClick: onClick),
