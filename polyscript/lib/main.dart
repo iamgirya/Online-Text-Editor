@@ -1,15 +1,14 @@
 import 'dart:math';
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:polyscript/ui/cursor_painter.dart';
-
 import 'model/user.dart';
+import 'ui/SelectText.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+
+ List<User> users = [];
+
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -18,10 +17,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Welcome to Flutter'),
+        ),
+        body: Center(
+          child: MainWidget(),
+        ),
       ),
-      home: const MainWidget(),
     );
   }
 }
@@ -34,11 +37,7 @@ class MainWidget extends StatefulWidget {
 }
 
 class _MainWidgetState extends State<MainWidget> {
-  var users = [
-    User(const Point(100, 36), "Delta Null", Colors.indigo),
-    User(const Point(150, 76), "IAmGirya", Colors.black),
-    User(const Point(60, 156), "StarProxima", Colors.teal)
-  ];
+ 
 
   final fieldController = TextEditingController();
   final scrollController = ScrollController(initialScrollOffset: 0);
@@ -58,33 +57,35 @@ class _MainWidgetState extends State<MainWidget> {
     setState(() {});
   }
 
+  void onClick(TextPainter textPainter,TapDownDetails details) {
+    setState(() {
+      if (users.isNotEmpty) {
+        users.removeLast();
+      }
+
+      var carretNumber = textPainter.getPositionForOffset(details.localPosition).offset;
+      Offset carretPozition = textPainter.getOffsetForCaret(textPainter.getPositionForOffset(details.localPosition), Rect.zero);
+
+      users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
+      print("Selection: ${carretNumber}");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.only(left: 16),
-            child: TextField(
-              selectionHeightStyle: BoxHeightStyle.includeLineSpacingMiddle,
-              maxLines: null,
-              decoration: const InputDecoration(contentPadding: EdgeInsets.all(0), isCollapsed: true),
-              controller: fieldController,
-              scrollController: scrollController,
-              style: const TextStyle(
-                fontFamily: "Roboto",
-                fontStyle: FontStyle.normal,
-                fontSize: 16,
-                height: 1.25,
-              ),
-            ),
-          ),
-          for (int i = 0; i < users.length; i++)
+    return Container(
+      width: 350,
+      height: 280,
+      color: Colors.yellow,
+      child: Stack(
+          children: [
+            SelectText(onClick: onClick),
             CustomPaint(
-              painter: CursorPainter(users, scrollOffset: scrollController.hasClients ? scrollController.offset : 0),
-            )
-        ],
-      ),
+              painter: CursorPainter(users, scrollOffset: scrollController.hasClients ? scrollController.offset : 0))
+          ],
+        ),
     );
   }
 }
+
+
