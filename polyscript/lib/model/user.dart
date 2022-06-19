@@ -2,9 +2,9 @@ import 'dart:math';
 import 'dart:ui';
 
 class User {
-  Point cursorPosition;
   String name;
   Color color;
+  Point cursorPosition;
 
   User(this.cursorPosition, this.name, this.color);
 }
