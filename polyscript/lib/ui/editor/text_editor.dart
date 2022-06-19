@@ -18,7 +18,7 @@ class _TextEditorState extends State<TextEditor> {
   TextEditingController editorController = TextEditingController(text: "");
   ScrollController scrollController = ScrollController();
   LineIndexPainter lineIndexPainter = LineIndexPainter();
-  
+  late TextPainter textPainter;
   GlobalKey _textFieldKey = GlobalKey();
   late TextField _textField;
   double xCaret = 0.0;
@@ -34,6 +34,16 @@ class _TextEditorState extends State<TextEditor> {
 
     super.initState();
 
+    textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.left,
+      maxLines: null,
+      text: const TextSpan(
+        style: textStyle,
+        text: "",
+      ),
+    );
+
     scrollController.addListener(() {
       setState(() {
         lineIndexPainter.scrollOffset = scrollController.offset;
@@ -41,73 +51,87 @@ class _TextEditorState extends State<TextEditor> {
 
     });
       editorController.addListener(() {
-      _updateCaretOffset(editorController.text);
+      _updateCaretOffset(editorController.text, true);
     });
   }
 
-  void _updateCaretOffset(String text) {
-
+  double savedWidth = 0;
+  void _updateCaretOffset(String text, bool needToRebuild) {
+//-3
+//2.2
+//0.6
     if (users.isNotEmpty) {
           users.removeLast();
         }
 
-    TextPainter painter = TextPainter(
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.left,
-      text: TextSpan(
+     textPainter.text = TextSpan(
         style: textStyle,
         text: text,
-      ),
-    );
-    painter.layout(minWidth: 20, maxWidth: maxWidth-64);
-
+      );
+    if (savedWidth == 0) {
+      textPainter.layout(minWidth: 20.0, maxWidth: maxWidth-64.0);
+    } else {
+      textPainter.layout(minWidth: 20.0, maxWidth: savedWidth);
+    }
+    if (savedWidth == 0 && maxWidth-64.0 - textPainter.width < 3) {
+      savedWidth = maxWidth-67.0;
+      textPainter.layout(minWidth: 20.0, maxWidth: savedWidth );
+    }
+    
     TextPosition cursorTextPosition = editorController.selection.extent;
     Rect caretPrototype = Rect.fromLTWH(
         0.0, 0.0, _textField.cursorWidth, _textField.cursorHeight ?? 0);
     Offset carretPozition =
-        painter.getOffsetForCaret(cursorTextPosition, caretPrototype);
+        textPainter.getOffsetForCaret(cursorTextPosition, caretPrototype);
 
+    if (needToRebuild){
     setState(() {
-    users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
+      users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
       xCaret = carretPozition.dx;
+      print("xc" +carretPozition.dx.toString());
       yCaret = carretPozition.dy;
-      painterWidth = painter.width;
-      painterHeight = painter.height;
-      preferredLineHeight = painter.preferredLineHeight;
+      painterWidth = textPainter.width;
+      print("pw" +painterWidth.toString());
+      painterHeight = textPainter.height;
+      preferredLineHeight = textPainter.preferredLineHeight;
     });
+
+    }
+    else {
+      users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
+    }
   }
 
 
   @override
   Widget build(BuildContext context) {
 
-    String text = '''
-xCaret: $xCaret
-yCaret: $yCaret
-yCaretBottom: ${yCaret + preferredLineHeight}
-''';
-
     _textField = TextField(
-      // onChanged: (text) {
-      //   textPainter.text = TextSpan(text: text, style: textStyle);
-      //   textPainter.layout(minWidth: constraints.minWidth - 64, maxWidth: constraints.maxWidth - 64);
-      //   setState(() {
-      //     lineIndexPainter.linesCount = textPainter.computeLineMetrics().length;
-      //   });
-      // },
       decoration: null,
       maxLines: null,
       style: textStyle,
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.left,
 
       key: _textFieldKey,
       controller: editorController,
       scrollController: scrollController,
     );
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        minWidth = constraints.minWidth;
-        maxWidth = constraints.maxWidth;
-        print(maxWidth);
+
+        if (savedWidth != 0 && constraints.maxWidth != maxWidth) {
+          savedWidth -= maxWidth-constraints.maxWidth;
+          maxWidth = constraints.maxWidth;
+
+          _updateCaretOffset(editorController.text, false);
+        }
+        else if (maxWidth != constraints.maxWidth) {
+          maxWidth = constraints.maxWidth;
+          _updateCaretOffset(editorController.text, false);
+        }
+        print(maxWidth-64);
         return SizedBox(
           width: 100,
           height: 100,
