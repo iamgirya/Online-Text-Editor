@@ -1,15 +1,15 @@
-import 'dart:developer';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:polyscript/ui/editor/line_index_widget.dart';
 import 'package:polyscript/ui/styles.dart';
 
-import '../../main.dart';
 import '../../model/user.dart';
 import '../cursor_painter.dart';
 
 class TextEditor extends StatefulWidget {
+  const TextEditor({Key? key}) : super(key: key);
+
   @override
   State<TextEditor> createState() => _TextEditorState();
 }
@@ -19,16 +19,18 @@ class _TextEditorState extends State<TextEditor> {
   ScrollController scrollController = ScrollController();
   LineIndexPainter lineIndexPainter = LineIndexPainter();
   late TextPainter textPainter;
-  GlobalKey _textFieldKey = GlobalKey();
   late TextField _textField;
-  double xCaret = 0.0;
-  double yCaret = 0.0;
-  double painterWidth = 0.0;
-  double painterHeight = 0.0;
-  double preferredLineHeight = 0.0;
-  double minWidth = 500.0;
+  List<User> users = [];
+
+  // GlobalKey _textFieldKey = GlobalKey();
+  // double xCaret = 0.0;
+  // double yCaret = 0.0;
+  // double painterWidth = 0.0;
+  // double painterHeight = 0.0;
+  // double preferredLineHeight = 0.0;
   double maxWidth = 500.0;
-  
+  double savedWidth = 0;
+
   @override
   void initState() {
 
@@ -55,19 +57,14 @@ class _TextEditorState extends State<TextEditor> {
     });
   }
 
-  double savedWidth = 0;
+  
   void _updateCaretOffset(String text, bool needToRebuild) {
-//-3
-//2.2
-//0.6
-    if (users.isNotEmpty) {
-          users.removeLast();
-        }
 
      textPainter.text = TextSpan(
         style: textStyle,
         text: text,
       );
+
     if (savedWidth == 0) {
       textPainter.layout(minWidth: 20.0, maxWidth: maxWidth-64.0);
     } else {
@@ -86,22 +83,29 @@ class _TextEditorState extends State<TextEditor> {
 
     if (needToRebuild){
     setState(() {
-      users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
-      xCaret = carretPozition.dx;
-      print("xc" +carretPozition.dx.toString());
-      yCaret = carretPozition.dy;
-      painterWidth = textPainter.width;
-      print("pw" +painterWidth.toString());
-      painterHeight = textPainter.height;
-      preferredLineHeight = textPainter.preferredLineHeight;
+      setMyCarret(carretPozition);
+      // xCaret = carretPozition.dx;
+      // print("xc" +carretPozition.dx.toString());
+      // yCaret = carretPozition.dy;
+      // painterWidth = textPainter.width;
+      // print("pw" +painterWidth.toString());
+      // painterHeight = textPainter.height;
+      // preferredLineHeight = textPainter.preferredLineHeight;
     });
 
     }
     else {
-      users.add( User(Point(carretPozition.dx, carretPozition.dy), "StarProximaa", Colors.teal));
+      setMyCarret(carretPozition);
     }
   }
 
+  void setMyCarret(Offset carretPozition)
+  {
+    if (users.isNotEmpty) {
+      users.removeLast();
+    }
+    users.add( User(Point(carretPozition.dx, carretPozition.dy), "MyName", Colors.teal));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +117,6 @@ class _TextEditorState extends State<TextEditor> {
       textDirection: TextDirection.ltr,
       textAlign: TextAlign.left,
 
-      key: _textFieldKey,
       controller: editorController,
       scrollController: scrollController,
     );
