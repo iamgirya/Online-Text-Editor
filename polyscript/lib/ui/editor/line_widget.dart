@@ -6,7 +6,6 @@ import 'package:polyscript/ui/styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/user_model.dart';
-import 'editor_inherit.dart';
 
 //виджет, отвечающий за отображение одной строки текста
 class LineWidget extends StatefulWidget {
@@ -65,7 +64,17 @@ class _LineWidgetState extends State<LineWidget> {
 
     return GestureDetector(
       onTapDown: (details) {
-        editor.updateLocalUser(newPosition: Point(0, widget.index));
+        var tapPosition = Offset(
+          details.localPosition.dx - 64,
+          usersOnLine.isEmpty ? details.localPosition.dy : details.localPosition.dy - 20,
+        );
+
+        editor.updateLocalUser(
+          newPosition: Point(
+            textPainter.getPositionForOffset(tapPosition).offset,
+            widget.index,
+          ),
+        );
       },
       child: Container(
         color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.33) : Colors.transparent,

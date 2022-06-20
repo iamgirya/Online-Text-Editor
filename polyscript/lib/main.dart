@@ -32,7 +32,7 @@ class MainWidget extends StatefulWidget {
 
 class _MainWidgetState extends State<MainWidget> {
   final EditorModel editor = EditorModel.createFile(
-    User(const Point(0, 2), "Delta Null", Colors.red),
+    User(const Point(0, 2), "user_" + Random().nextInt(100).toString(), Colors.red),
   );
 
   @override

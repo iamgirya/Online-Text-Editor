@@ -7,38 +7,90 @@ let wsServer = new WebSocket.Server({
 });
 
 function generateFileCode() {
-    for(var i = 0; ; i++) {
-        if (files.find((file) => file.fileCode == i) == undefined) {
-            return i;
-        }
-    }
+    // for(var i = 0; ; i++) {
+    //     if (files.find((file) => file.fileCode == i) == undefined) {
+    //         return i
+    //     }
+    // }
 
     return -1;
 }
 
 class User {
     constructor(name, fileCode, socket) {
-        this.name = name;
-        this.fileCode = fileCode;
-        this.socket = socket;
+        this.name = name
+        this.fileCode = fileCode
+        this.socket = socket
+        this.position = [-1,-1]
     }
 }
 
+function userToJson(user) {
+    return JSON.stringify({
+        "username" : user.name,
+        "position" : user.position
+    }).toString()
+    //"{'username':" + user.name + ", position: " + user.position + "}"
+  }
+
 class CloudFile {
     constructor(fileCode) {
-        this.fileCode = fileCode;
-        this.users = [];
+        this.fileCode = fileCode
+        this.users = []
+        this.lines = []
+    }
+
+    addNewUser(newUser) {
+        console.log(this.users.map(userToJson))
+        newUser.socket.send(
+            JSON.stringify({
+                "action": "send_file_state",
+                "users": this.users.map(userToJson),
+            })
+        )
+
+        this.users.push(newUser)
+        this.users.forEach((user) => {
+            user.socket.send(
+                JSON.stringify({
+                    'action': 'new_user',
+                    'user': JSON.stringify({
+                        'user_name': newUser.name,
+                        'position': newUser.position,
+                    })
+                })
+            )
+        })
+    }
+
+    removeUser(removedUser) {
+        this.users.pop(removedUser)
+
+        this.users.forEach((user) => {
+            user.socket.send(
+                JSON.stringify({
+                    'action': 'user_exit',
+                    'username': removedUser.name,
+                })
+            )
+        })
     }
 }
 
 // Создаём массив для хранения всех подключенных пользователей
-let users = []
-let files = []
+//let users = []
+let file = new CloudFile()
+
+function printUsers() {
+    console.log("users list:")
+    file.users.forEach ((user) => {
+        console.log(user.name);
+    });
+}
  
 // Проверяем подключение
 wsServer.on('connection', function (ws) {
     let user = new User("", -1, ws);
-    users.push(user)
     console.log("connection!");
 
     ws.on('message', function (msg) {
@@ -46,48 +98,34 @@ wsServer.on('connection', function (ws) {
 
         let message = JSON.parse(msg);
 
-
         if (message.action == "login") {
         
             console.log("it action!")
 
-            let unloginedUser = users.find((u) => u.socket == ws)
-            if (unloginedUser != undefined) {
-                unloginedUser.name = message.username;
-                unloginedUser.fileCode = generateFileCode();
+        user.name = message.username
+        user.fileCode = generateFileCode()
+        file.addNewUser(user)
+        printUsers()
 
-                let file = new CloudFile(unloginedUser.fileCode);
-                file.users.push[unloginedUser];
-                files.push(file);
-
-                unloginedUser.socket.send(JSON.stringify({
-                    'fileCode': unloginedUser.fileCode,
-                    'result': 'ok',
-                }));
-
-                console.log("users list:")
-                users.forEach ((user) => {
-                    console.log(user.name);
-                });
-            }
         } else if (message.action == "connection") {
             let fileCode = message.fileCode;
             let username = message.username;
+        } else if (message.action == "position_update") {
+            file.users.forEach((user) => {
+                user.socket.send(JSON.stringify({
+                        "action":"user_update_position",
+                        "username": message.username,
+                        "newPosition": message.newPosition,
+                    })
+                )
+            })
         }
     })
     // Делаем действие при выходе пользователя из чата
     ws.on('close', function () {
         console.log("closed(");
-        let popUser = users.findIndex((u) => u.socket == ws);
-
-        if (popUser != -1) {
-            let usedFile = files.find((file) => file.fileCode == users[popUser].fileCode)
-
-            if (usedFile != undefined) {
-                usedFile.users = usedFile.users.filter((u) => u.socket != popUser[popUser].socket);
-            }
-        }
-
-        users.splice(popUser, 1)
+        let popUser = file.users.find((u) => u.socket == ws);
+        file.removeUser(popUser)
+        printUsers()
     })
 })
