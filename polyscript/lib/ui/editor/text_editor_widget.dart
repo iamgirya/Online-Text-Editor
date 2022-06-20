@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:polyscript/model/editor_model.dart';
 import 'package:polyscript/ui/editor/line_widget.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     scrollController.addListener(() {});
   }
 
-  //поиск позиции курсора, который нходится на координатах position
+  //поиск позиции курсора, который нaходится на координатах position
   Point<int>? getCursorPosition(Offset position, Element element) {
     Point<int>? result;
 
@@ -76,23 +77,38 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
               if (newPosition != null) {
                 editor.updateLocalUser(newPosition: newPosition);
+
               }
             });
           },
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 16, bottom: 16),
-            itemCount: editor.file.lines.length,
-            itemBuilder: ((context, index) {
-              return ChangeNotifierProvider.value(
-                value: editor,
-                child: LineWidget(
-                  text: editor.file.lines[index],
-                  index: index,
-                  lineWidth: constraints.maxWidth,
-                ),
-              );
-            }),
-            controller: scrollController,
+          child: KeyboardListener(
+            autofocus: true,
+            focusNode: FocusNode(),
+            onKeyEvent: (keyEvent) {
+                if (keyEvent is! KeyUpEvent && keyEvent.character != null) {
+                  String newLine = editor.file.lines[editor.localUser.cursorPosition.y].substring(0,editor.localUser.cursorPosition.x)
+                  + keyEvent.character!
+                  + editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
+                  
+                  editor.updateFileModel(lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+
+                }
+              },
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 16, bottom: 16),
+              itemCount: editor.file.lines.length,
+              itemBuilder: ((context, index) {
+                return ChangeNotifierProvider.value(
+                  value: editor,
+                  child: LineWidget(
+                    text: editor.file.lines[index],
+                    index: index,
+                    lineWidth: constraints.maxWidth,
+                  ),
+                );
+              }),
+              controller: scrollController,
+            ),
           ),
         );
       }),

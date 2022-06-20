@@ -33,7 +33,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late Animation<double> animation;
   late AnimationController controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
 
-  void initPainters() {
+  void initPainters(String text) {
     indexPainter = TextPainter(
       text: TextSpan(
         text: widget.index.toString(),
@@ -47,7 +47,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     textPainter = TextPainter(
       text: TextSpan(
-        text: widget.text,
+        text: text,
         style: textStyle,
       ),
       textDirection: TextDirection.ltr,
@@ -83,8 +83,8 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    initPainters();
     EditorModel editor = Provider.of<EditorModel>(context);
+    initPainters(editor.file.lines[widget.index]);
 
     localUserLineIndex = editor.localUser.cursorPosition.y;
     var usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();

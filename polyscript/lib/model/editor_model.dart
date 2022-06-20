@@ -36,6 +36,24 @@ class EditorModel extends ChangeNotifier {
     }
   }
 
+  void updateFileModel({int? lineIndex, String? newText, int? inputLength}) {
+    if (lineIndex != null && newText != null && inputLength != null) {
+      file.lines[lineIndex] = newText;
+      
+      updateLocalUser(newPosition: Point(localUser.cursorPosition.x+inputLength ,localUser.cursorPosition.y) );
+
+      // socket.sink.add(
+      //   jsonEncode(
+      //     {
+      //       "action": "position_update",
+      //       "username": localUser.name,
+      //       "newPosition": [localUser.cursorPosition.x, localUser.cursorPosition.y],
+      //     },
+      //   ),
+      // );
+    }
+  }
+
   EditorModel.createFile(this.localUser) {
     socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
     socket.sink.add(
