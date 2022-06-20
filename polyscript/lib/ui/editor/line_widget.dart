@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:polyscript/helper.dart';
 import 'package:polyscript/model/editor_model.dart';

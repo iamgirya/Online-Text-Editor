@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -39,8 +38,8 @@ class EditorModel extends ChangeNotifier {
   void updateFileModel({int? lineIndex, String? newText, int? inputLength}) {
     if (lineIndex != null && newText != null && inputLength != null) {
       file.lines[lineIndex] = newText;
-      
-      updateLocalUser(newPosition: Point(localUser.cursorPosition.x+inputLength ,localUser.cursorPosition.y) );
+
+      updateLocalUser(newPosition: Point(localUser.cursorPosition.x + inputLength, localUser.cursorPosition.y));
 
       // socket.sink.add(
       //   jsonEncode(
