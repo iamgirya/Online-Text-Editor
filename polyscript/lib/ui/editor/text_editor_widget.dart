@@ -17,11 +17,73 @@ class TextEditorWidget extends StatefulWidget {
 
 class _TextEditorWidgetState extends State<TextEditorWidget> {
   final ScrollController scrollController = ScrollController();
+  late EditorModel editor;
+  late var preffereCursorPositionX = 0;
 
   @override
   void initState() {
     super.initState();
     scrollController.addListener(() {});
+  }
+
+  void keyboardNavigation(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        if (editor.localUser.cursorPosition.x == editor.file.lines[editor.localUser.cursorPosition.y].length) {
+          if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
+            editor.updateLocalUser(
+              newPosition: Point(
+                0,
+                editor.localUser.cursorPosition.y + 1,
+              ),
+            );
+            preffereCursorPositionX = editor.localUser.cursorPosition.x;
+          }
+        } else {
+          editor.updateLocalUser(
+            newPosition: Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y),
+          );
+          preffereCursorPositionX = editor.localUser.cursorPosition.x;
+        }
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        if (editor.localUser.cursorPosition.x == 0) {
+          if (editor.localUser.cursorPosition.y > 0) {
+            editor.updateLocalUser(
+              newPosition: Point(
+                editor.file.lines[editor.localUser.cursorPosition.y - 1].length,
+                editor.localUser.cursorPosition.y - 1,
+              ),
+            );
+            preffereCursorPositionX = editor.localUser.cursorPosition.x;
+          }
+        } else {
+          editor.updateLocalUser(
+            newPosition: Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y),
+          );
+          preffereCursorPositionX = editor.localUser.cursorPosition.x;
+        }
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        if (editor.localUser.cursorPosition.y > 0) {
+          var xPosition = min(preffereCursorPositionX, editor.file.lines[editor.localUser.cursorPosition.y - 1].length);
+          editor.updateLocalUser(
+            newPosition: Point(
+              xPosition,
+              editor.localUser.cursorPosition.y - 1,
+            ),
+          );
+        }
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
+          var xPosition = min(preffereCursorPositionX, editor.file.lines[editor.localUser.cursorPosition.y + 1].length);
+          editor.updateLocalUser(
+            newPosition: Point(
+              xPosition,
+              editor.localUser.cursorPosition.y + 1,
+            ),
+          );
+        }
+      }
+    }
   }
 
   //поиск позиции курсора, который нaходится на координатах position
@@ -62,7 +124,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    EditorModel editor = EditorInherit.of(context).editor;
+    editor = EditorInherit.of(context).editor;
 
     return LayoutBuilder(
       builder: ((context, constraints) {
@@ -72,7 +134,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
               var newPosition = getCursorPosition(details.globalPosition, element);
               if (newPosition != null) {
                 editor.updateLocalUser(newPosition: newPosition);
-
+                preffereCursorPositionX = newPosition.x;
               }
             });
           },
@@ -80,15 +142,17 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             autofocus: true,
             focusNode: FocusNode(),
             onKeyEvent: (keyEvent) {
-                if (keyEvent is! KeyUpEvent && keyEvent.character != null) {
-                  String newLine = editor.file.lines[editor.localUser.cursorPosition.y].substring(0,editor.localUser.cursorPosition.x)
-                  + keyEvent.character!
-                  + editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
-                  
-                  editor.updateFileModel(lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+              if (keyEvent is! KeyUpEvent && keyEvent.character != null) {
+                String newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                        .substring(0, editor.localUser.cursorPosition.x) +
+                    keyEvent.character! +
+                    editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
 
-                }
-              },
+                editor.updateFileModel(lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+              } else if (keyEvent is KeyDownEvent) {
+                keyboardNavigation(keyEvent);
+              }
+            },
             child: ListView.builder(
               padding: const EdgeInsets.only(top: 16, bottom: 16),
               itemCount: editor.file.lines.length,
