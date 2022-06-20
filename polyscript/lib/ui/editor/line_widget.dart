@@ -21,10 +21,10 @@ class LineWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<LineWidget> createState() => _LineWidgetState();
+  State<LineWidget> createState() => LineWidgetState();
 }
 
-class _LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
+class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late TextPainter indexPainter;
   late TextPainter textPainter;
   late double lineHeight;
@@ -54,7 +54,11 @@ class _LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
       textAlign: TextAlign.left,
     );
 
-    textPainter.layout(minWidth: widget.lineWidth - 64, maxWidth: widget.lineWidth - 64);
+    textPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
+  }
+
+  int getCursorOffset(Offset position) {
+    return textPainter.getPositionForOffset(position).offset;
   }
 
   @override
@@ -63,7 +67,6 @@ class _LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     controller.addListener(() {
       if (localUserLineIndex == widget.index) {
-        //print(controller.value);
         setState(() {});
       }
     });
@@ -88,43 +91,33 @@ class _LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     lineHeight = textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20);
 
-    return GestureDetector(
-      onTapDown: (details) {
-        var tapPosition = Offset(
-          details.localPosition.dx - 64,
-          usersOnLine.isEmpty ? details.localPosition.dy : details.localPosition.dy - 20,
-        );
-
-        editor.updateLocalUser(
-          newPosition: Point(
-            textPainter.getPositionForOffset(tapPosition).offset,
-            widget.index,
+    return Container(
+      color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.2) : Colors.transparent,
+      width: widget.lineWidth,
+      height: lineHeight,
+      child: Stack(
+        children: [
+          CustomPaint(
+            painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20,
+                position: editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null,
+                animationValue: controller.value),
+            foregroundPainter: null,
           ),
-        );
-      },
-      child: Container(
-        color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.2) : Colors.transparent,
-        width: widget.lineWidth,
-        height: lineHeight,
-        child: Stack(
-          children: [
-            CustomPaint(
-              painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20,
-                  position:
-                      editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null,
-                  animationValue: controller.value),
-              foregroundPainter: null,
+          CustomPaint(
+            painter: UsersPainter(
+              textPainter,
+              usersOnLine,
             ),
-            CustomPaint(
-              painter: UsersPainter(
-                textPainter,
-                usersOnLine,
-              ),
-            )
-          ],
-        ),
+          )
+        ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }
 
