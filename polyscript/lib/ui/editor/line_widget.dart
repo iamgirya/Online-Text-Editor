@@ -32,6 +32,8 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
   late Animation<double> animation;
   late AnimationController controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
+  late EditorModel editor;
+  late List<User> usersOnLine;
 
   void initPainters(String text) {
     indexPainter = TextPainter(
@@ -58,7 +60,8 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   }
 
   int getCursorOffset(Offset position) {
-    return textPainter.getPositionForOffset(position).offset;
+    var yOffset = usersOnLine.isEmpty ? 0 : 20;
+    return textPainter.getPositionForOffset(Offset(position.dx, position.dy - yOffset)).offset;
   }
 
   @override
@@ -87,7 +90,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
     initPainters(editor.file.lines[widget.index]);
 
     localUserLineIndex = editor.localUser.cursorPosition.y;
-    var usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
+    usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
 
     lineHeight = textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20);
 
