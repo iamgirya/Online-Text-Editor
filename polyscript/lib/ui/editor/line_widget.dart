@@ -1,10 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:polyscript/helper.dart';
 import 'package:polyscript/model/editor_model.dart';
 import 'package:polyscript/ui/styles.dart';
 import 'package:provider/provider.dart';
-
 import '../../model/user_model.dart';
 
 //виджет, отвечающий за отображение одной строки текста
@@ -24,16 +24,20 @@ class LineWidget extends StatefulWidget {
   State<LineWidget> createState() => _LineWidgetState();
 }
 
-class _LineWidgetState extends State<LineWidget> {
+class _LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late TextPainter indexPainter;
   late TextPainter textPainter;
   late double lineHeight;
+  var localUserLineIndex = -1;
+
+  late Animation<double> animation;
+  late AnimationController controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
 
   void initPainters() {
     indexPainter = TextPainter(
       text: TextSpan(
         text: widget.index.toString(),
-        style: textStyle,
+        style: indexStyle,
       ),
       textDirection: TextDirection.ltr,
       textAlign: TextAlign.right,
@@ -54,10 +58,32 @@ class _LineWidgetState extends State<LineWidget> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    controller.addListener(() {
+      if (localUserLineIndex == widget.index) {
+        //print(controller.value);
+        setState(() {});
+      }
+    });
+
+    animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.linear,
+      reverseCurve: Curves.easeIn,
+    );
+
+    controller.forward();
+    controller.repeat(reverse: true, period: const Duration(milliseconds: 500));
+  }
+
+  @override
   Widget build(BuildContext context) {
     initPainters();
     EditorModel editor = Provider.of<EditorModel>(context);
 
+    localUserLineIndex = editor.localUser.cursorPosition.y;
     var usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
 
     lineHeight = textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20);
@@ -77,13 +103,16 @@ class _LineWidgetState extends State<LineWidget> {
         );
       },
       child: Container(
-        color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.33) : Colors.transparent,
+        color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.2) : Colors.transparent,
         width: widget.lineWidth,
         height: lineHeight,
         child: Stack(
           children: [
             CustomPaint(
-              painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20),
+              painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20,
+                  position:
+                      editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null,
+                  animationValue: controller.value),
               foregroundPainter: null,
             ),
             CustomPaint(
@@ -102,14 +131,24 @@ class _LineWidgetState extends State<LineWidget> {
 class LinePainter extends CustomPainter {
   final TextPainter textPainter;
   final TextPainter indexPainter;
+  final int? position;
+  final double? animationValue;
   final double textOffset;
-  LinePainter(this.indexPainter, this.textPainter, this.textOffset);
+  LinePainter(this.indexPainter, this.textPainter, this.textOffset, {this.position, this.animationValue});
 
   @override
   void paint(Canvas canvas, Size size) {
     indexPainter.paint(canvas, Offset(48 - indexPainter.width, textOffset));
-
     textPainter.paint(canvas, Offset(64, textOffset));
+
+    if (position != null) {
+      var cursorPaint = Paint();
+      cursorPaint.color = Colors.black.withOpacity(animationValue!);
+      var cursorOffset = textPainter.getOffsetForCaret(TextPosition(offset: position!), Rect.zero);
+      canvas.drawRRect(
+          roundRect(Rect.fromLTWH(cursorOffset.dx + 64, cursorOffset.dy + textOffset, 2, 20), [1, 1, 1, 1]),
+          cursorPaint);
+    }
   }
 
   @override
@@ -149,8 +188,7 @@ class UsersPainter extends CustomPainter {
       text: TextSpan(
         text: user.name,
         style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
+          fontSize: 12,
           height: 1,
           fontFamily: "Roboto",
         ),
@@ -180,15 +218,5 @@ class UsersPainter extends CustomPainter {
           cursorPosition.dx + 64 + 6,
           5,
         ));
-  }
-
-  RRect roundRect(Rect rect, List<double> corners) {
-    return RRect.fromRectAndCorners(
-      rect,
-      topLeft: Radius.circular(corners[0]),
-      bottomLeft: Radius.circular(corners[1]),
-      topRight: Radius.circular(corners[2]),
-      bottomRight: Radius.circular(corners[3]),
-    );
   }
 }

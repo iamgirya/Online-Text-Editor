@@ -37,7 +37,7 @@ class EditorModel extends ChangeNotifier {
   }
 
   EditorModel.createFile(this.localUser) {
-    socket = WebSocketChannel.connect(Uri.parse("ws://127.0.0.1:8081"));
+    socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
     socket.sink.add(
       jsonEncode(
         {
@@ -62,6 +62,21 @@ class EditorModel extends ChangeNotifier {
         "test",
         "test",
         "test",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line very long line very long line",
       ],
     );
   }
@@ -82,10 +97,8 @@ class EditorModel extends ChangeNotifier {
     } else if (json["action"] == "user_update_position") {
       var username = json["username"].toString();
       var userIndex = users.indexWhere((user) => user.name == username);
-      print(userIndex);
 
       if (userIndex != -1) {
-        print("update position!");
         var point = json["newPosition"];
         users[userIndex].cursorPosition = Point(point[0], point[1]);
         notifyListeners();
