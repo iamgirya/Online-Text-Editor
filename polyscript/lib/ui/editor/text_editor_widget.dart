@@ -46,8 +46,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             position.dy - frame.top,
           );
 
-          print(localPosition);
-
           result = Point<int>(
             state.getCursorOffset(localPosition),
             line.index,
@@ -69,11 +67,8 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
       builder: ((context, constraints) {
         return GestureDetector(
           onTapDown: (details) {
-            print("press in " + details.globalPosition.toString());
             context.visitChildElements((element) {
               var newPosition = getCursorPosition(details.globalPosition, element);
-              print(newPosition.toString());
-
               if (newPosition != null) {
                 editor.updateLocalUser(newPosition: newPosition);
               }
