@@ -22,15 +22,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   late var textEditorFocus = FocusNode();
   var editorHeight = 0.0;
   late var preffereCursorPositionX = 0;
-
   List<GlobalKey<LineWidgetState>> linesList = [];
+
+  Point<int>? highlightStart;
 
   @override
   void initState() {
     super.initState();
     scrollController.addListener(() {});
-
-    
   }
 
   void keyboardNavigation(KeyEvent event) {
@@ -264,10 +263,25 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             context.visitChildElements((element) {
               var newPosition = getCursorPositionInText(details.globalPosition, element);
               if (newPosition != null) {
-                editor.updateLocalUser(newPosition: newPosition);
+                editor.updateLocalUser(newPosition: newPosition, newSelection: Selection.none());
                 preffereCursorPositionX = newPosition.x;
               }
             });
+          },
+          onHorizontalDragStart: (details) {
+            editor.updateLocalUser(newSelection: Selection.none());
+            textEditorFocus.requestFocus();
+            highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
+          },
+          onHorizontalDragUpdate: (details) {
+            var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
+            if (highlightStart != null && newPosition != null) {
+              editor.updateLocalUser(newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
+              preffereCursorPositionX = newPosition.x;
+            }
+          },
+          onHorizontalDragEnd: (details) {
+            highlightStart = null;
           },
           child: KeyboardListener(
             autofocus: true,

@@ -10,6 +10,17 @@ const textStyle = TextStyle(
   decorationStyle: null,
 );
 
+var textStyleHighlight = TextStyle(
+  fontFamily: "Roboto",
+  fontStyle: FontStyle.normal,
+  background: Paint()..color = Colors.blue,
+  color: Colors.white,
+  fontSize: 16,
+  height: 1.25,
+  letterSpacing: 0,
+  decorationStyle: null,
+);
+
 var indexStyle = TextStyle(
   fontFamily: "Roboto",
   fontStyle: FontStyle.normal,

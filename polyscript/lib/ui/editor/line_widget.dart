@@ -27,6 +27,7 @@ class LineWidget extends StatefulWidget {
 class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late TextPainter indexPainter;
   late TextPainter textPainter;
+  late TextPainter highlightTextPainter;
   late double lineHeight;
   var localUserLineIndex = -1;
 
@@ -35,7 +36,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late EditorModel editor;
   late List<User> usersOnLine;
 
-  void initPainters(String text) {
+  void initPainters(String text, Selection? selection) {
     indexPainter = TextPainter(
       text: TextSpan(
         text: widget.index.toString(),
@@ -58,6 +59,64 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     textPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
 
+    //обновление выделения
+    if (selection != null) {
+      int? highlightStart;
+      int? highlightEnd;
+      if (selection.start.y < widget.index) {
+        highlightStart = 0;
+      } else if (selection.start.y == widget.index) { 
+        highlightStart = selection.start.x;
+      }
+      if (selection.end.y == widget.index) {
+        highlightEnd = selection.end.x;
+      } else if (selection.end.y > widget.index) { 
+        highlightEnd = text.length;
+      }
+
+      if (highlightStart != null && highlightEnd != null) {
+        highlightTextPainter = TextPainter(
+          text: TextSpan(
+            children: <TextSpan>[
+              //перед выделением
+              TextSpan(
+                text: " " * highlightStart,
+                style: textStyle,
+              ),
+              //выделение
+              TextSpan(
+                text: text.substring(highlightStart,highlightEnd),
+                style: textStyleHighlight,
+              )
+            ]
+          ),
+          textDirection: TextDirection.ltr,
+          textAlign: TextAlign.left,
+        );  
+      }
+      else {
+        highlightTextPainter = TextPainter(
+          text: TextSpan(
+            children: <TextSpan>[
+              //перед выделением
+              TextSpan(
+                text: "",
+                style: textStyle,
+              ),
+              //выделение
+              TextSpan(
+                text: "",
+                style: textStyleHighlight,
+              )
+            ]
+          ),
+          textDirection: TextDirection.ltr,
+          textAlign: TextAlign.left,
+        );
+      }
+
+      highlightTextPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
+    } 
   }
 
   int getCursorOffset(Offset position) {
@@ -83,12 +142,33 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     controller.forward();
     controller.repeat(reverse: true, period: const Duration(milliseconds: 500));
+
+    highlightTextPainter = TextPainter(
+      text: TextSpan(
+        children: <TextSpan>[
+          //перед выделением
+          TextSpan(
+            text: "",
+            style: textStyle,
+          ),
+          //выделение
+          TextSpan(
+            text: "",
+            style: textStyleHighlight,
+          )
+        ]
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.left,
+    );
+
+    highlightTextPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
   }
 
   @override
   Widget build(BuildContext context) {
     EditorModel editor = Provider.of<EditorModel>(context);
-    initPainters(editor.file.lines[widget.index]);
+    initPainters(editor.file.lines[widget.index], editor.localUser.selection);
 
     localUserLineIndex = editor.localUser.cursorPosition.y;
     usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
@@ -105,6 +185,12 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
             painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20,
                 position: editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null,
                 animationValue: controller.value),
+            foregroundPainter: null,
+          ),
+          CustomPaint(
+            painter: LinePainter(indexPainter, highlightTextPainter, usersOnLine.isEmpty ? 0 : 20,
+                position: editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null
+                ),
             foregroundPainter: null,
           ),
           CustomPaint(
@@ -138,7 +224,7 @@ class LinePainter extends CustomPainter {
     indexPainter.paint(canvas, Offset(48 - indexPainter.width, textOffset));
     textPainter.paint(canvas, Offset(64, textOffset));
 
-    if (position != null) {
+    if (position != null && animationValue != null) {
       var cursorPaint = Paint();
       cursorPaint.color = Colors.black.withOpacity(animationValue!);
       var cursorOffset = textPainter.getOffsetForCaret(TextPosition(offset: position!), Rect.zero);
