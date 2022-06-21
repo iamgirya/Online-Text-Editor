@@ -18,6 +18,8 @@ class LineWidget extends StatefulWidget {
     required this.lineWidth,
   }) : super(key: key);
 
+  static double baseHeight = 20;
+  
   @override
   State<LineWidget> createState() => LineWidgetState();
 }
@@ -32,7 +34,6 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late AnimationController controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
   late EditorModel editor;
   late List<User> usersOnLine;
-  double baseHeight = 20;
 
   void initPainters(String text) {
     indexPainter = TextPainter(

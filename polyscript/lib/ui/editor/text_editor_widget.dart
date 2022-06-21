@@ -70,116 +70,114 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       
-      // var cursorPosition;
-      // context.visitChildElements((element) {
-      //   cursorPosition = getCursorPositionInScreen(
-      //     Offset(
-      //       editor.localUser.cursorPosition.x.toDouble(),
-      //       editor.localUser.cursorPosition.y.toDouble(),
-      //     ),
-      //     element,
-      //   );
-      // });
-      
-      if (editor.localUser.cursorPosition.y > 0) {        ////
-        
-        context.visitChildElements((element) {
-          var cursorPosition = getCursorPositionInScreen(
-            Offset(
-              editor.localUser.cursorPosition.x.toDouble(),
-              editor.localUser.cursorPosition.y.toDouble(),
-            ),
-            element,
-          );
+      // LineWidget, на котором находится курсор
+      Element element = linesList[editor.localUser.cursorPosition.y].currentContext as Element;
+      Point<int>? newPosition;
+      Offset? cursorPosition = getCursorPositionInScreen(
+        Offset(
+          editor.localUser.cursorPosition.x.toDouble(),
+          editor.localUser.cursorPosition.y.toDouble(),
+        ),
+        element,
+      );
+      double yOffset = linesList[editor.localUser.cursorPosition.y].currentState!.usersOnLine.isEmpty ? 0 : 20;
 
-          if (cursorPosition != null) {
-            
-            var yOffset = (editor.users.where((element) => element.cursorPosition.y == editor.localUser.cursorPosition.y).toList()).isEmpty ? 0 : 20;
+      if (cursorPosition != null) {  
+        // делаем сдвиг по координатам
+        cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
+          -LineWidget.baseHeight+yOffset);
+        // вычисляем новое положение
+        newPosition = getCursorPositionInText(cursorPosition, element);
+        // если оно null, значит, курсор переходит на следующий LineWidget
+        if (newPosition == null && editor.localUser.cursorPosition.y > 0) {
+          element = linesList[editor.localUser.cursorPosition.y-1].currentContext as Element;
+          newPosition = getCursorPositionInText(cursorPosition, element);
+        }
+        
+        if (newPosition != null) {
+          if (newPosition != editor.localUser.cursorPosition) {
+            editor.updateLocalUser(newPosition: newPosition);
+            preffereCursorPositionX = newPosition.x;
+          }
+          // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
+          else if (editor.localUser.cursorPosition.y > 0) {
             cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-              -linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight+yOffset);
-            
-            var newPosition = getCursorPositionInText(cursorPosition, element);
+              -LineWidget.baseHeight);
+            element = linesList[editor.localUser.cursorPosition.y-1].currentContext as Element;
+            newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
-              if (newPosition != editor.localUser.cursorPosition) {
-                editor.updateLocalUser(newPosition: newPosition);
-                preffereCursorPositionX = newPosition.x;
-              } else {
-                cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-                  -linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight);
-                newPosition = getCursorPositionInText(cursorPosition, element);
-                if (newPosition != null) {
-                  editor.updateLocalUser(newPosition: newPosition);
-                  preffereCursorPositionX = newPosition.x;
-                }
-              }
+              editor.updateLocalUser(newPosition: newPosition);
+              preffereCursorPositionX = newPosition.x;
             }
           }
-        });
-        
-        context.visitChildElements((element) {
-          var cursorPosition = getCursorPositionInScreen(
+
+          cursorPosition = getCursorPositionInScreen(
             Offset(
               editor.localUser.cursorPosition.x.toDouble(),
               editor.localUser.cursorPosition.y.toDouble(),
             ),
             element,
           );
-
           if (cursorPosition != null && cursorPosition.dy < 0) {
             scrollController.animateTo(scrollController.offset + cursorPosition.dy - 20,
                 duration: const Duration(milliseconds: 100), curve: Curves.linear);
           }
-        });
+        }
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {       ////
+      // LineWidget, на котором находится курсор
+      Element element = linesList[editor.localUser.cursorPosition.y].currentContext as Element;
+      Point<int>? newPosition;
+      Offset? cursorPosition = getCursorPositionInScreen(
+        Offset(
+          editor.localUser.cursorPosition.x.toDouble(),
+          editor.localUser.cursorPosition.y.toDouble(),
+        ),
+        element,
+      );
+      double yOffset = linesList[editor.localUser.cursorPosition.y].currentState!.usersOnLine.isEmpty ? 0 : 20;
 
-        context.visitChildElements((element) {
-          var cursorPosition = getCursorPositionInScreen(
-            Offset(
-              editor.localUser.cursorPosition.x.toDouble(),
-              editor.localUser.cursorPosition.y.toDouble(),
-            ),
-            element,
-          );
-
-          if (cursorPosition != null) {
-            var yOffset = (editor.users.where((element) => element.cursorPosition.y == editor.localUser.cursorPosition.y).toList()).isEmpty ? 0 : 20;
+      if (cursorPosition != null) {  
+        // делаем сдвиг по координатам
+        cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
+          +LineWidget.baseHeight+yOffset);
+        // вычисляем новое положение
+        newPosition = getCursorPositionInText(cursorPosition, element);
+        // если оно null, значит, курсор переходит на следующий LineWidget
+        if (newPosition == null && editor.localUser.cursorPosition.y +1 < editor.file.lines.length) {
+          element = linesList[editor.localUser.cursorPosition.y+1].currentContext as Element;
+          newPosition = getCursorPositionInText(cursorPosition, element);
+        }
+        
+        if (newPosition != null) {
+          if (newPosition != editor.localUser.cursorPosition) {
+            editor.updateLocalUser(newPosition: newPosition);
+            preffereCursorPositionX = newPosition.x;
+          }
+          // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
+          else if (editor.localUser.cursorPosition.y +1 < editor.file.lines.length) {
             cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-              +linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight+yOffset);
-            
-            var newPosition = getCursorPositionInText(cursorPosition, element);
+              +LineWidget.baseHeight);
+            element = linesList[editor.localUser.cursorPosition.y+1].currentContext as Element;
+            newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
-              if (newPosition != editor.localUser.cursorPosition) {
-                editor.updateLocalUser(newPosition: newPosition);
-                preffereCursorPositionX = newPosition.x;
-              } else {
-                cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-                  -linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight);
-                newPosition = getCursorPositionInText(cursorPosition, element);
-                if (newPosition != null) {
-                  editor.updateLocalUser(newPosition: newPosition);
-                  preffereCursorPositionX = newPosition.x;
-                }
-              }
+              editor.updateLocalUser(newPosition: newPosition);
+              preffereCursorPositionX = newPosition.x;
             }
           }
-        });
 
-        context.visitChildElements((element) {
-          var cursorPosition = getCursorPositionInScreen(
+          cursorPosition = getCursorPositionInScreen(
             Offset(
               editor.localUser.cursorPosition.x.toDouble(),
               editor.localUser.cursorPosition.y.toDouble(),
             ),
             element,
           );
-
           if (cursorPosition != null && cursorPosition.dy > editorHeight) {
             scrollController.animateTo(scrollController.offset + (cursorPosition.dy - editorHeight + 20 + 16),
                 duration: const Duration(milliseconds: 100), curve: Curves.linear);
           }
-        });
+        }
       }
     }
   }
@@ -255,7 +253,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   Widget build(BuildContext context) {
     editor = EditorInherit.of(context).editor;
 
-    editor.users.add(User(Point(10,10), "00", Color.fromARGB(255, 255, 0, 0)));
+    //editor.users.add(User(Point(4,0), "00", Color.fromARGB(255, 255, 0, 0)));
     return LayoutBuilder(
       builder: ((context, constraints) {
         editorHeight = constraints.maxHeight;
