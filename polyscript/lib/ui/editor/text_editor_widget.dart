@@ -18,6 +18,8 @@ class TextEditorWidget extends StatefulWidget {
 class _TextEditorWidgetState extends State<TextEditorWidget> {
   final ScrollController scrollController = ScrollController();
   late EditorModel editor;
+  late var textEditorFocus = FocusNode();
+  var editorHeight = 0.0;
   late var preffereCursorPositionX = 0;
 
   @override
@@ -42,8 +44,8 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         editor.updateLocalUser(
           newPosition: Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y),
         );
-        preffereCursorPositionX = editor.localUser.cursorPosition.x;
       }
+      preffereCursorPositionX = editor.localUser.cursorPosition.x;
     } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       if (editor.localUser.cursorPosition.x == 0) {
         if (editor.localUser.cursorPosition.y > 0) {
@@ -70,6 +72,21 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             editor.localUser.cursorPosition.y - 1,
           ),
         );
+
+        context.visitChildElements((element) {
+          var cursorPosition = getCursorPositionInScreen(
+            Offset(
+              editor.localUser.cursorPosition.x.toDouble(),
+              editor.localUser.cursorPosition.y.toDouble(),
+            ),
+            element,
+          );
+
+          if (cursorPosition != null && cursorPosition.dy < 0) {
+            scrollController.animateTo(scrollController.offset + cursorPosition.dy - 20,
+                duration: const Duration(milliseconds: 100), curve: Curves.linear);
+          }
+        });
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
       if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
@@ -80,12 +97,27 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             editor.localUser.cursorPosition.y + 1,
           ),
         );
+
+        context.visitChildElements((element) {
+          var cursorPosition = getCursorPositionInScreen(
+            Offset(
+              editor.localUser.cursorPosition.x.toDouble(),
+              editor.localUser.cursorPosition.y.toDouble(),
+            ),
+            element,
+          );
+
+          if (cursorPosition != null && cursorPosition.dy > editorHeight) {
+            scrollController.animateTo(scrollController.offset + (cursorPosition.dy - editorHeight + 20 + 16),
+                duration: const Duration(milliseconds: 100), curve: Curves.linear);
+          }
+        });
       }
     }
   }
 
-  //поиск позиции курсора, который нaходится на координатах position
-  Point<int>? getCursorPosition(Offset position, Element element) {
+  //поиск позиции курсора в тексте, который нaходится на координатах position
+  Point<int>? getCursorPositionInText(Offset position, Element element) {
     Point<int>? result;
 
     element.visitChildren((child) {
@@ -113,7 +145,38 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           );
         }
       } else {
-        result ??= getCursorPosition(position, child);
+        result ??= getCursorPositionInText(position, child);
+      }
+    });
+
+    return result;
+  }
+
+  //поиск позиции курсора на экране, который нaходится на координатах position
+  Offset? getCursorPositionInScreen(Offset position, Element element) {
+    Offset? result;
+    element.visitChildren((child) {
+      if (child.widget is LineWidget &&
+          result == null &&
+          (child.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
+        var transform = child.renderObject!.getTransformTo(null).getTranslation();
+        var frame = Rect.fromLTWH(
+          transform.x,
+          transform.y,
+          child.renderObject!.paintBounds.width,
+          child.renderObject!.paintBounds.height,
+        );
+
+        var state = (child as StatefulElement).state as LineWidgetState;
+        var lineOffset =
+            state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
+
+        result = Offset(
+          transform.x + lineOffset.dx + 64,
+          transform.y + lineOffset.dy,
+        );
+      } else {
+        result ??= getCursorPositionInScreen(position, child);
       }
     });
 
@@ -126,11 +189,13 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
     return LayoutBuilder(
       builder: ((context, constraints) {
+        editorHeight = constraints.maxHeight;
         return GestureDetector(
           onDoubleTapDown: (details) {},
           onTapDown: (details) {
+            textEditorFocus.requestFocus();
             context.visitChildElements((element) {
-              var newPosition = getCursorPosition(details.globalPosition, element);
+              var newPosition = getCursorPositionInText(details.globalPosition, element);
               if (newPosition != null) {
                 editor.updateLocalUser(newPosition: newPosition);
                 preffereCursorPositionX = newPosition.x;
@@ -139,7 +204,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           },
           child: KeyboardListener(
             autofocus: true,
-            focusNode: FocusNode(),
+            focusNode: textEditorFocus,
             onKeyEvent: (keyEvent) {
               if (keyEvent is! KeyUpEvent && keyEvent.character != null) {
                 String newLine = "";
@@ -159,7 +224,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                 }
               } else if (keyEvent is! KeyUpEvent) {
                 keyboardNavigation(keyEvent);
-              }
+              } else {}
             },
             child: ListView.builder(
               padding: const EdgeInsets.only(top: 16, bottom: 16),
