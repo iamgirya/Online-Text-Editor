@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:polyscript/model/editor_model.dart';
+import 'package:polyscript/model/user_model.dart';
 import 'package:polyscript/ui/editor/line_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -22,10 +23,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   var editorHeight = 0.0;
   late var preffereCursorPositionX = 0;
 
+  List<GlobalKey<LineWidgetState>> linesList = [];
+
   @override
   void initState() {
     super.initState();
     scrollController.addListener(() {});
+
+    
   }
 
   void keyboardNavigation(KeyEvent event) {
@@ -64,15 +69,53 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         preffereCursorPositionX = editor.localUser.cursorPosition.x;
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      if (editor.localUser.cursorPosition.y > 0) {
-        var xPosition = min(preffereCursorPositionX, editor.file.lines[editor.localUser.cursorPosition.y - 1].length);
-        editor.updateLocalUser(
-          newPosition: Point(
-            xPosition,
-            editor.localUser.cursorPosition.y - 1,
-          ),
-        );
+      
+      // var cursorPosition;
+      // context.visitChildElements((element) {
+      //   cursorPosition = getCursorPositionInScreen(
+      //     Offset(
+      //       editor.localUser.cursorPosition.x.toDouble(),
+      //       editor.localUser.cursorPosition.y.toDouble(),
+      //     ),
+      //     element,
+      //   );
+      // });
+      
+      if (editor.localUser.cursorPosition.y > 0) {        ////
+        
+        context.visitChildElements((element) {
+          var cursorPosition = getCursorPositionInScreen(
+            Offset(
+              editor.localUser.cursorPosition.x.toDouble(),
+              editor.localUser.cursorPosition.y.toDouble(),
+            ),
+            element,
+          );
 
+          if (cursorPosition != null) {
+            
+            var yOffset = (editor.users.where((element) => element.cursorPosition.y == editor.localUser.cursorPosition.y).toList()).isEmpty ? 0 : 20;
+            cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
+              -linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight+yOffset);
+            
+            var newPosition = getCursorPositionInText(cursorPosition, element);
+            if (newPosition != null) {
+              if (newPosition != editor.localUser.cursorPosition) {
+                editor.updateLocalUser(newPosition: newPosition);
+                preffereCursorPositionX = newPosition.x;
+              } else {
+                cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
+                  -linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight);
+                newPosition = getCursorPositionInText(cursorPosition, element);
+                if (newPosition != null) {
+                  editor.updateLocalUser(newPosition: newPosition);
+                  preffereCursorPositionX = newPosition.x;
+                }
+              }
+            }
+          }
+        });
+        
         context.visitChildElements((element) {
           var cursorPosition = getCursorPositionInScreen(
             Offset(
@@ -89,14 +132,39 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         });
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
-        var xPosition = min(preffereCursorPositionX, editor.file.lines[editor.localUser.cursorPosition.y + 1].length);
-        editor.updateLocalUser(
-          newPosition: Point(
-            xPosition,
-            editor.localUser.cursorPosition.y + 1,
-          ),
-        );
+      if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {       ////
+
+        context.visitChildElements((element) {
+          var cursorPosition = getCursorPositionInScreen(
+            Offset(
+              editor.localUser.cursorPosition.x.toDouble(),
+              editor.localUser.cursorPosition.y.toDouble(),
+            ),
+            element,
+          );
+
+          if (cursorPosition != null) {
+            var yOffset = (editor.users.where((element) => element.cursorPosition.y == editor.localUser.cursorPosition.y).toList()).isEmpty ? 0 : 20;
+            cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
+              +linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight+yOffset);
+            
+            var newPosition = getCursorPositionInText(cursorPosition, element);
+            if (newPosition != null) {
+              if (newPosition != editor.localUser.cursorPosition) {
+                editor.updateLocalUser(newPosition: newPosition);
+                preffereCursorPositionX = newPosition.x;
+              } else {
+                cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
+                  -linesList[editor.localUser.cursorPosition.y].currentState!.baseHeight);
+                newPosition = getCursorPositionInText(cursorPosition, element);
+                if (newPosition != null) {
+                  editor.updateLocalUser(newPosition: newPosition);
+                  preffereCursorPositionX = newPosition.x;
+                }
+              }
+            }
+          }
+        });
 
         context.visitChildElements((element) {
           var cursorPosition = getCursorPositionInScreen(
@@ -120,19 +188,18 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   Point<int>? getCursorPositionInText(Offset position, Element element) {
     Point<int>? result;
 
-    element.visitChildren((child) {
-      if (child.widget is LineWidget && result == null) {
-        var transform = child.renderObject!.getTransformTo(null).getTranslation();
+    if (element.widget is LineWidget && result == null) {
+        var transform = element.renderObject!.getTransformTo(null).getTranslation();
         var frame = Rect.fromLTWH(
           transform.x,
           transform.y,
-          child.renderObject!.paintBounds.width,
-          child.renderObject!.paintBounds.height,
+          element.renderObject!.paintBounds.width,
+          element.renderObject!.paintBounds.height,
         );
 
         if (frame.contains(position) && result == null) {
-          var line = child.widget as LineWidget;
-          var state = (child as StatefulElement).state as LineWidgetState;
+          var line = element.widget as LineWidget;
+          var state = (element as StatefulElement).state as LineWidgetState;
 
           var localPosition = Offset(
             position.dx - frame.left - 64,
@@ -145,29 +212,29 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           );
         }
       } else {
-        result ??= getCursorPositionInText(position, child);
+        element.visitChildren((child) {
+            result ??= getCursorPositionInText(position, child);
+        });
       }
-    });
-
     return result;
   }
 
   //поиск позиции курсора на экране, который нaходится на координатах position
   Offset? getCursorPositionInScreen(Offset position, Element element) {
     Offset? result;
-    element.visitChildren((child) {
-      if (child.widget is LineWidget &&
+    
+    if (element.widget is LineWidget &&
           result == null &&
-          (child.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
-        var transform = child.renderObject!.getTransformTo(null).getTranslation();
+          (element.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
+        var transform = element.renderObject!.getTransformTo(null).getTranslation();
         var frame = Rect.fromLTWH(
           transform.x,
           transform.y,
-          child.renderObject!.paintBounds.width,
-          child.renderObject!.paintBounds.height,
+          element.renderObject!.paintBounds.width,
+          element.renderObject!.paintBounds.height,
         );
 
-        var state = (child as StatefulElement).state as LineWidgetState;
+        var state = (element as StatefulElement).state as LineWidgetState;
         var lineOffset =
             state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
 
@@ -176,9 +243,10 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           transform.y + lineOffset.dy,
         );
       } else {
-        result ??= getCursorPositionInScreen(position, child);
+        element.visitChildren((child) {
+          result ??= getCursorPositionInScreen(position, child);
+        });
       }
-    });
 
     return result;
   }
@@ -187,6 +255,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   Widget build(BuildContext context) {
     editor = EditorInherit.of(context).editor;
 
+    editor.users.add(User(Point(10,10), "00", Color.fromARGB(255, 255, 0, 0)));
     return LayoutBuilder(
       builder: ((context, constraints) {
         editorHeight = constraints.maxHeight;
@@ -230,9 +299,16 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
               padding: const EdgeInsets.only(top: 16, bottom: 16),
               itemCount: editor.file.lines.length,
               itemBuilder: ((context, index) {
+                if (linesList.length > index) {
+                  linesList[index] = GlobalKey<LineWidgetState>();
+                }
+                else {
+                  linesList.add(GlobalKey<LineWidgetState>());
+                }
                 return ChangeNotifierProvider.value(
                   value: editor,
                   child: LineWidget(
+                    key: linesList[index],
                     text: editor.file.lines[index],
                     index: index,
                     lineWidth: constraints.maxWidth,
