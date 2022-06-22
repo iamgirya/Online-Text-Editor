@@ -247,7 +247,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
     // в едиторе
     setState(() {
-      editor.makeNewLine(previousLineIndex + 1, startText);
+      editor.makeNewLine(previousLineIndex, startText);
     });
   }
 
@@ -284,7 +284,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   editor.updateLocalUser(
                       newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
                   preffereCursorPositionX = newPosition.x;
-
                   //скролл
                   scrollList(linesList[editor.localUser.cursorPosition.y].currentContext as Element);
                 }
@@ -299,7 +298,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   String newLine = "";
                   String secondLine = "";
                   if (keyEvent is! KeyUpEvent) {
-                    print(keyEvent.logicalKey == LogicalKeyboardKey.enter);
                     if (keyEvent.character != null &&
                         keyEvent.logicalKey != LogicalKeyboardKey.enter &&
                         keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
@@ -318,11 +316,12 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                               .substring(editor.localUser.cursorPosition.x);
                       editor.updateFileModel(
                           lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
-                    } else if (keyEvent.physicalKey == PhysicalKeyboardKey.enter) {
+                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
                       newLine = editor.file.lines[editor.localUser.cursorPosition.y]
                           .substring(0, editor.localUser.cursorPosition.x);
                       secondLine = editor.file.lines[editor.localUser.cursorPosition.y]
                           .substring(editor.localUser.cursorPosition.x);
+
                       editor.updateFileModel(
                           lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 0);
                       editor.updateLocalUser(newPosition: Point(0, editor.localUser.cursorPosition.y + 1));

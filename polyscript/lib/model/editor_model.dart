@@ -53,12 +53,11 @@ class EditorModel extends ChangeNotifier {
     }
   }
 
-    void makeNewLine(int i, String startText) {
-      file.lines.insert(i, startText);
-      
-      notifyListeners();
-    }
+  void makeNewLine(int i, String startText) {
+    file.lines.insert(i, startText);
 
+    notifyListeners();
+  }
 
   EditorModel.createFile(this.localUser) {
     socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
@@ -144,5 +143,4 @@ class EditorModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 }
