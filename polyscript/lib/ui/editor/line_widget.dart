@@ -116,7 +116,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     controller.addListener(() {
       if (localUserLineIndex == widget.index) {
-        setState(() {});
+        //setState(() {});
       }
     });
 
@@ -133,6 +133,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    print("hello");
     EditorModel editor = Provider.of<EditorModel>(context);
     initPainters(editor.file.lines[widget.index], editor.localUser.selection);
 

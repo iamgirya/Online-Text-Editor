@@ -161,6 +161,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     }
   }
 
+// если курсор находится выше или ниже, то делать скролл до его местонахождения
   void scrollList(Element element) {
     var cursorPosition = getCursorPositionInScreen(
       Offset(
@@ -246,12 +247,22 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     return result;
   }
 
+  void makeNewLine({required int previousLineIndex, required String startText}) {
+    linesList.insert(previousLineIndex+1, GlobalKey<LineWidgetState>());
+
+    // в едиторе
+    setState(() {
+      editor.makeNewLine(previousLineIndex+1, startText);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     editor = EditorInherit.of(context).editor;
 
-    //editor.users.add(User(Point(4,0), "00", Color.fromARGB(255, 255, 0, 0)));
-    return LayoutBuilder(
+    return ChangeNotifierProvider.value(
+      value: editor,
+      child: LayoutBuilder(
       builder: ((context, constraints) {
         editorHeight = constraints.maxHeight;
         return GestureDetector(
@@ -289,51 +300,60 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             autofocus: true,
             focusNode: textEditorFocus,
             onKeyEvent: (keyEvent) {
-              if (keyEvent is! KeyUpEvent && keyEvent.character != null) {
-                String newLine = "";
-                if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
+              String newLine = "";
+              String secondLine = "";
+              if (keyEvent is! KeyUpEvent) {
+                if (keyEvent.character != null) {
+                  newLine = "";
+                  newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                      .substring(0, editor.localUser.cursorPosition.x) +
+                      keyEvent.character! +
+                      editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
+                  editor.updateFileModel(
+                      lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+                } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
                   newLine = editor.file.lines[editor.localUser.cursorPosition.y]
                           .substring(0, editor.localUser.cursorPosition.x - 1) +
                       editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
                   editor.updateFileModel(
                       lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
-                } else {
-                  newLine = editor.file.lines[editor.localUser.cursorPosition.y]
-                          .substring(0, editor.localUser.cursorPosition.x) +
-                      keyEvent.character! +
-                      editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
+                } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
+                  newLine = editor.file.lines[editor.localUser.cursorPosition.y].substring(0, editor.localUser.cursorPosition.x);
+                  secondLine = editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
                   editor.updateFileModel(
-                      lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+                      lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                  //переносим остаток на новую линию
+                  makeNewLine(previousLineIndex: editor.localUser.cursorPosition.y, startText: secondLine);
+                } else {
+                  keyboardNavigation(keyEvent);
                 }
-              } else if (keyEvent is! KeyUpEvent) {
-                keyboardNavigation(keyEvent);
-              } else {}
+              } 
             },
             child: ListView.builder(
               padding: const EdgeInsets.only(top: 16, bottom: 16),
               itemCount: editor.file.lines.length,
               itemBuilder: ((context, index) {
+                
                 if (linesList.length > index) {
                   linesList[index] = GlobalKey<LineWidgetState>();
                 }
                 else {
                   linesList.add(GlobalKey<LineWidgetState>());
                 }
-                return ChangeNotifierProvider.value(
-                  value: editor,
-                  child: LineWidget(
+                return LineWidget(
                     key: linesList[index],
                     text: editor.file.lines[index],
                     index: index,
                     lineWidth: constraints.maxWidth,
-                  ),
-                );
+                  );
               }),
               controller: scrollController,
             ),
           ),
         );
       }),
+    )
     );
+
   }
 }
