@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:polyscript/helper.dart';
 import 'package:polyscript/model/editor_model.dart';
@@ -19,7 +21,7 @@ class LineWidget extends StatefulWidget {
   }) : super(key: key);
 
   static double baseHeight = 20;
-  
+
   @override
   State<LineWidget> createState() => LineWidgetState();
 }
@@ -51,47 +53,45 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
     int? highlightStart;
     int? highlightEnd;
     if (selection != null && selection.start.y != -1) {
-      if (selection.start.y > selection.end.y || (selection.start.y == selection.end.y && selection.start.x > selection.end.x)) {
+      if (selection.start.y > selection.end.y ||
+          (selection.start.y == selection.end.y && selection.start.x > selection.end.x)) {
         selection = Selection(selection.end, selection.start);
       }
       if (selection.start.y < widget.index) {
         highlightStart = 0;
-      } else if (selection.start.y == widget.index) { 
+      } else if (selection.start.y == widget.index) {
         highlightStart = selection.start.x;
       }
       if (selection.end.y == widget.index) {
         highlightEnd = selection.end.x;
-      } else if (selection.end.y > widget.index) { 
+      } else if (selection.end.y > widget.index) {
         highlightEnd = text.length;
       }
     }
 
     if (highlightStart != null && highlightEnd != null) {
       textPainter = TextPainter(
-        text: TextSpan(
-          children: <TextSpan>[
-            //перед выделением
-            TextSpan(
-              text: text.substring(0,highlightStart),
-              style: textStyle,
-            ),
-            //выделение
-            TextSpan(
-              text: text.substring(highlightStart,highlightEnd),
-              style: textStyleHighlight,
-            ),
-            //после выделения
-            TextSpan(
-              text: text.substring(highlightEnd),
-              style: textStyle,
-            ),
-          ]
-        ),
+        text: TextSpan(children: <TextSpan>[
+          //перед выделением
+          TextSpan(
+            text: text.substring(0, highlightStart),
+            style: textStyle,
+          ),
+          //выделение
+          TextSpan(
+            text: text.substring(highlightStart, highlightEnd),
+            style: textStyleHighlight,
+          ),
+          //после выделения
+          TextSpan(
+            text: text.substring(highlightEnd),
+            style: textStyle,
+          ),
+        ]),
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.left,
       );
-    }
-    else {
+    } else {
       textPainter = TextPainter(
         text: TextSpan(
           text: text,
@@ -116,7 +116,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     controller.addListener(() {
       if (localUserLineIndex == widget.index) {
-        //setState(() {});
+        setState(() {});
       }
     });
 
@@ -128,19 +128,18 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     controller.forward();
     controller.repeat(reverse: true, period: const Duration(milliseconds: 500));
-
   }
 
   @override
   Widget build(BuildContext context) {
-    print("hello");
+    //print("hello");
     EditorModel editor = Provider.of<EditorModel>(context);
     initPainters(editor.file.lines[widget.index], editor.localUser.selection);
 
     localUserLineIndex = editor.localUser.cursorPosition.y;
     usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
 
-    lineHeight = textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20);
+    lineHeight = max(20, textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20));
 
     return Container(
       color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.2) : Colors.transparent,

@@ -68,7 +68,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         preffereCursorPositionX = editor.localUser.cursorPosition.x;
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      
       // LineWidget, на котором находится курсор
       Element element = linesList[editor.localUser.cursorPosition.y].currentContext as Element;
       Point<int>? newPosition;
@@ -81,18 +80,17 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
       );
       double yOffset = linesList[editor.localUser.cursorPosition.y].currentState!.usersOnLine.isEmpty ? 0 : 20;
 
-      if (cursorPosition != null) {  
+      if (cursorPosition != null) {
         // делаем сдвиг по координатам
-        cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-          -LineWidget.baseHeight+yOffset);
+        cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy - LineWidget.baseHeight + yOffset);
         // вычисляем новое положение
         newPosition = getCursorPositionInText(cursorPosition, element);
         // если оно null, значит, курсор переходит на следующий LineWidget
         if (newPosition == null && editor.localUser.cursorPosition.y > 0) {
-          element = linesList[editor.localUser.cursorPosition.y-1].currentContext as Element;
+          element = linesList[editor.localUser.cursorPosition.y - 1].currentContext as Element;
           newPosition = getCursorPositionInText(cursorPosition, element);
         }
-        
+
         if (newPosition != null) {
           if (newPosition != editor.localUser.cursorPosition) {
             editor.updateLocalUser(newPosition: newPosition);
@@ -100,9 +98,8 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           }
           // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
           else if (editor.localUser.cursorPosition.y > 0) {
-            cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-              -LineWidget.baseHeight);
-            element = linesList[editor.localUser.cursorPosition.y-1].currentContext as Element;
+            cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy - LineWidget.baseHeight);
+            element = linesList[editor.localUser.cursorPosition.y - 1].currentContext as Element;
             newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
               editor.updateLocalUser(newPosition: newPosition);
@@ -126,28 +123,26 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
       );
       double yOffset = linesList[editor.localUser.cursorPosition.y].currentState!.usersOnLine.isEmpty ? 0 : 20;
 
-      if (cursorPosition != null) {  
+      if (cursorPosition != null) {
         // делаем сдвиг по координатам
-        cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-          +LineWidget.baseHeight+yOffset);
+        cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy + LineWidget.baseHeight + yOffset);
         // вычисляем новое положение
         newPosition = getCursorPositionInText(cursorPosition, element);
         // если оно null, значит, курсор переходит на следующий LineWidget
-        if (newPosition == null && editor.localUser.cursorPosition.y +1 < editor.file.lines.length) {
-          element = linesList[editor.localUser.cursorPosition.y+1].currentContext as Element;
+        if (newPosition == null && editor.localUser.cursorPosition.y + 1 < editor.file.lines.length) {
+          element = linesList[editor.localUser.cursorPosition.y + 1].currentContext as Element;
           newPosition = getCursorPositionInText(cursorPosition, element);
         }
-        
+
         if (newPosition != null) {
           if (newPosition != editor.localUser.cursorPosition) {
             editor.updateLocalUser(newPosition: newPosition);
             preffereCursorPositionX = newPosition.x;
           }
           // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
-          else if (editor.localUser.cursorPosition.y +1 < editor.file.lines.length) {
-            cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy
-              +LineWidget.baseHeight);
-            element = linesList[editor.localUser.cursorPosition.y+1].currentContext as Element;
+          else if (editor.localUser.cursorPosition.y + 1 < editor.file.lines.length) {
+            cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy + LineWidget.baseHeight);
+            element = linesList[editor.localUser.cursorPosition.y + 1].currentContext as Element;
             newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
               editor.updateLocalUser(newPosition: newPosition);
@@ -185,74 +180,74 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     Point<int>? result;
 
     if (element.widget is LineWidget && result == null) {
-        var transform = element.renderObject!.getTransformTo(null).getTranslation();
-        var frame = Rect.fromLTWH(
-          transform.x,
-          transform.y,
-          element.renderObject!.paintBounds.width,
-          element.renderObject!.paintBounds.height,
+      var transform = element.renderObject!.getTransformTo(null).getTranslation();
+      var frame = Rect.fromLTWH(
+        transform.x,
+        transform.y,
+        element.renderObject!.paintBounds.width,
+        element.renderObject!.paintBounds.height,
+      );
+
+      if (frame.contains(position) && result == null) {
+        var line = element.widget as LineWidget;
+        var state = (element as StatefulElement).state as LineWidgetState;
+
+        var localPosition = Offset(
+          position.dx - frame.left - 64,
+          position.dy - frame.top,
         );
 
-        if (frame.contains(position) && result == null) {
-          var line = element.widget as LineWidget;
-          var state = (element as StatefulElement).state as LineWidgetState;
-
-          var localPosition = Offset(
-            position.dx - frame.left - 64,
-            position.dy - frame.top,
-          );
-
-          result = Point<int>(
-            state.getCursorOffset(localPosition),
-            line.index,
-          );
-        }
-      } else {
-        element.visitChildren((child) {
-            result ??= getCursorPositionInText(position, child);
-        });
+        result = Point<int>(
+          state.getCursorOffset(localPosition),
+          line.index,
+        );
       }
+    } else {
+      element.visitChildren((child) {
+        result ??= getCursorPositionInText(position, child);
+      });
+    }
     return result;
   }
 
   //поиск позиции курсора на экране, который нaходится на координатах position
   Offset? getCursorPositionInScreen(Offset position, Element element) {
     Offset? result;
-    
+
     if (element.widget is LineWidget &&
-          result == null &&
-          (element.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
-        var transform = element.renderObject!.getTransformTo(null).getTranslation();
-        var frame = Rect.fromLTWH(
-          transform.x,
-          transform.y,
-          element.renderObject!.paintBounds.width,
-          element.renderObject!.paintBounds.height,
-        );
+        result == null &&
+        (element.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
+      var transform = element.renderObject!.getTransformTo(null).getTranslation();
+      var frame = Rect.fromLTWH(
+        transform.x,
+        transform.y,
+        element.renderObject!.paintBounds.width,
+        element.renderObject!.paintBounds.height,
+      );
 
-        var state = (element as StatefulElement).state as LineWidgetState;
-        var lineOffset =
-            state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
+      var state = (element as StatefulElement).state as LineWidgetState;
+      var lineOffset =
+          state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
 
-        result = Offset(
-          transform.x + lineOffset.dx + 64,
-          transform.y + lineOffset.dy,
-        );
-      } else {
-        element.visitChildren((child) {
-          result ??= getCursorPositionInScreen(position, child);
-        });
-      }
+      result = Offset(
+        transform.x + lineOffset.dx + 64,
+        transform.y + lineOffset.dy,
+      );
+    } else {
+      element.visitChildren((child) {
+        result ??= getCursorPositionInScreen(position, child);
+      });
+    }
 
     return result;
   }
 
   void makeNewLine({required int previousLineIndex, required String startText}) {
-    linesList.insert(previousLineIndex+1, GlobalKey<LineWidgetState>());
+    linesList.insert(previousLineIndex + 1, GlobalKey<LineWidgetState>());
 
     // в едиторе
     setState(() {
-      editor.makeNewLine(previousLineIndex+1, startText);
+      editor.makeNewLine(previousLineIndex + 1, startText);
     });
   }
 
@@ -261,99 +256,104 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     editor = EditorInherit.of(context).editor;
 
     return ChangeNotifierProvider.value(
-      value: editor,
-      child: LayoutBuilder(
-      builder: ((context, constraints) {
-        editorHeight = constraints.maxHeight;
-        return GestureDetector(
-          onDoubleTapDown: (details) {},
-          onTapDown: (details) {
-            textEditorFocus.requestFocus();
-            context.visitChildElements((element) {
-              var newPosition = getCursorPositionInText(details.globalPosition, element);
-              if (newPosition != null) {
-                editor.updateLocalUser(newPosition: newPosition, newSelection: Selection.none());
-                preffereCursorPositionX = newPosition.x;
-              }
-            });
-          },
-          onHorizontalDragStart: (details) {
-            editor.updateLocalUser(newSelection: Selection.none());
-            textEditorFocus.requestFocus();
-            highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
-          },
-          onHorizontalDragUpdate: (details) {
-            // отображение выделения
-            var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
-            if (highlightStart != null && newPosition != null) {
-              editor.updateLocalUser(newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
-              preffereCursorPositionX = newPosition.x;
-            
-              //скролл
-              scrollList(linesList[editor.localUser.cursorPosition.y].currentContext as Element);
-            }
-          },
-          onHorizontalDragEnd: (details) {
-            highlightStart = null;
-          },
-          child: KeyboardListener(
-            autofocus: true,
-            focusNode: textEditorFocus,
-            onKeyEvent: (keyEvent) {
-              String newLine = "";
-              String secondLine = "";
-              if (keyEvent is! KeyUpEvent) {
-                if (keyEvent.character != null) {
-                  newLine = "";
-                  newLine = editor.file.lines[editor.localUser.cursorPosition.y]
-                      .substring(0, editor.localUser.cursorPosition.x) +
-                      keyEvent.character! +
-                      editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
-                  editor.updateFileModel(
-                      lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
-                } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
-                  newLine = editor.file.lines[editor.localUser.cursorPosition.y]
-                          .substring(0, editor.localUser.cursorPosition.x - 1) +
-                      editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
-                  editor.updateFileModel(
-                      lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
-                } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
-                  newLine = editor.file.lines[editor.localUser.cursorPosition.y].substring(0, editor.localUser.cursorPosition.x);
-                  secondLine = editor.file.lines[editor.localUser.cursorPosition.y].substring(editor.localUser.cursorPosition.x);
-                  editor.updateFileModel(
-                      lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
-                  //переносим остаток на новую линию
-                  makeNewLine(previousLineIndex: editor.localUser.cursorPosition.y, startText: secondLine);
-                } else {
-                  keyboardNavigation(keyEvent);
-                }
-              } 
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 16, bottom: 16),
-              itemCount: editor.file.lines.length,
-              itemBuilder: ((context, index) {
-                
-                if (linesList.length > index) {
-                  linesList[index] = GlobalKey<LineWidgetState>();
-                }
-                else {
-                  linesList.add(GlobalKey<LineWidgetState>());
-                }
-                return LineWidget(
-                    key: linesList[index],
-                    text: editor.file.lines[index],
-                    index: index,
-                    lineWidth: constraints.maxWidth,
-                  );
-              }),
-              controller: scrollController,
-            ),
-          ),
-        );
-      }),
-    )
-    );
+        value: editor,
+        child: LayoutBuilder(
+          builder: ((context, constraints) {
+            editorHeight = constraints.maxHeight;
+            return GestureDetector(
+              onDoubleTapDown: (details) {},
+              onTapDown: (details) {
+                textEditorFocus.requestFocus();
+                context.visitChildElements((element) {
+                  var newPosition = getCursorPositionInText(details.globalPosition, element);
+                  if (newPosition != null) {
+                    editor.updateLocalUser(newPosition: newPosition, newSelection: Selection.none());
+                    preffereCursorPositionX = newPosition.x;
+                  }
+                });
+              },
+              onHorizontalDragStart: (details) {
+                editor.updateLocalUser(newSelection: Selection.none());
+                textEditorFocus.requestFocus();
+                highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
+              },
+              onHorizontalDragUpdate: (details) {
+                // отображение выделения
+                var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
+                if (highlightStart != null && newPosition != null) {
+                  editor.updateLocalUser(
+                      newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
+                  preffereCursorPositionX = newPosition.x;
 
+                  //скролл
+                  scrollList(linesList[editor.localUser.cursorPosition.y].currentContext as Element);
+                }
+              },
+              onHorizontalDragEnd: (details) {
+                highlightStart = null;
+              },
+              child: KeyboardListener(
+                autofocus: true,
+                focusNode: textEditorFocus,
+                onKeyEvent: (keyEvent) {
+                  String newLine = "";
+                  String secondLine = "";
+                  if (keyEvent is! KeyUpEvent) {
+                    print(keyEvent.logicalKey == LogicalKeyboardKey.enter);
+                    if (keyEvent.character != null &&
+                        keyEvent.logicalKey != LogicalKeyboardKey.enter &&
+                        keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
+                      newLine = "";
+                      newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                              .substring(0, editor.localUser.cursorPosition.x) +
+                          keyEvent.character! +
+                          editor.file.lines[editor.localUser.cursorPosition.y]
+                              .substring(editor.localUser.cursorPosition.x);
+                      editor.updateFileModel(
+                          lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
+                      newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                              .substring(0, editor.localUser.cursorPosition.x - 1) +
+                          editor.file.lines[editor.localUser.cursorPosition.y]
+                              .substring(editor.localUser.cursorPosition.x);
+                      editor.updateFileModel(
+                          lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                    } else if (keyEvent.physicalKey == PhysicalKeyboardKey.enter) {
+                      newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                          .substring(0, editor.localUser.cursorPosition.x);
+                      secondLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                          .substring(editor.localUser.cursorPosition.x);
+                      editor.updateFileModel(
+                          lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 0);
+                      editor.updateLocalUser(newPosition: Point(0, editor.localUser.cursorPosition.y + 1));
+                      //переносим остаток на новую линию
+                      makeNewLine(previousLineIndex: editor.localUser.cursorPosition.y, startText: secondLine);
+                    } else {
+                      keyboardNavigation(keyEvent);
+                    }
+                  }
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 16, bottom: 16),
+                  itemCount: editor.file.lines.length,
+                  itemBuilder: ((context, index) {
+                    if (linesList.length > index) {
+                      linesList[index] = GlobalKey<LineWidgetState>();
+                    } else {
+                      linesList.add(GlobalKey<LineWidgetState>());
+                    }
+                    return LineWidget(
+                      key: linesList[index],
+                      text: editor.file.lines[index],
+                      index: index,
+                      lineWidth: constraints.maxWidth,
+                    );
+                  }),
+                  controller: scrollController,
+                ),
+              ),
+            );
+          }),
+        ));
   }
 }
