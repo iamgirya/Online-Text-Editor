@@ -110,17 +110,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             }
           }
 
-          cursorPosition = getCursorPositionInScreen(
-            Offset(
-              editor.localUser.cursorPosition.x.toDouble(),
-              editor.localUser.cursorPosition.y.toDouble(),
-            ),
-            element,
-          );
-          if (cursorPosition != null && cursorPosition.dy < 0) {
-            scrollController.animateTo(scrollController.offset + cursorPosition.dy - 20,
-                duration: const Duration(milliseconds: 100), curve: Curves.linear);
-          }
+          scrollList(element);
         }
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
@@ -165,19 +155,27 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             }
           }
 
-          cursorPosition = getCursorPositionInScreen(
-            Offset(
-              editor.localUser.cursorPosition.x.toDouble(),
-              editor.localUser.cursorPosition.y.toDouble(),
-            ),
-            element,
-          );
-          if (cursorPosition != null && cursorPosition.dy > editorHeight) {
-            scrollController.animateTo(scrollController.offset + (cursorPosition.dy - editorHeight + 20 + 16),
-                duration: const Duration(milliseconds: 100), curve: Curves.linear);
-          }
+          scrollList(element);
         }
       }
+    }
+  }
+
+  void scrollList(Element element) {
+    var cursorPosition = getCursorPositionInScreen(
+      Offset(
+        editor.localUser.cursorPosition.x.toDouble(),
+        editor.localUser.cursorPosition.y.toDouble(),
+      ),
+      element,
+    );
+    if (cursorPosition != null && cursorPosition.dy > editorHeight) {
+      scrollController.animateTo(scrollController.offset + (cursorPosition.dy - editorHeight + 20 + 16),
+          duration: const Duration(milliseconds: 100), curve: Curves.linear);
+    }
+    if (cursorPosition != null && cursorPosition.dy < 0) {
+      scrollController.animateTo(scrollController.offset + cursorPosition.dy - 20,
+          duration: const Duration(milliseconds: 100), curve: Curves.linear);
     }
   }
 
@@ -274,10 +272,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
           },
           onHorizontalDragUpdate: (details) {
+            // отображение выделения
             var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
             if (highlightStart != null && newPosition != null) {
               editor.updateLocalUser(newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
               preffereCursorPositionX = newPosition.x;
+            
+              //скролл
+              scrollList(linesList[editor.localUser.cursorPosition.y].currentContext as Element);
             }
           },
           onHorizontalDragEnd: (details) {

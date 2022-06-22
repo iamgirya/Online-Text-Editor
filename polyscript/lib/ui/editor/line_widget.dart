@@ -27,7 +27,6 @@ class LineWidget extends StatefulWidget {
 class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late TextPainter indexPainter;
   late TextPainter textPainter;
-  late TextPainter highlightTextPainter;
   late double lineHeight;
   var localUserLineIndex = -1;
 
@@ -48,21 +47,13 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     indexPainter.layout(minWidth: 48, maxWidth: 48);
 
-    textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: textStyle,
-      ),
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.left,
-    );
-
-    textPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
-
     //обновление выделения
-    if (selection != null) {
-      int? highlightStart;
-      int? highlightEnd;
+    int? highlightStart;
+    int? highlightEnd;
+    if (selection != null && selection.start.y != -1) {
+      if (selection.start.y > selection.end.y || (selection.start.y == selection.end.y && selection.start.x > selection.end.x)) {
+        selection = Selection(selection.end, selection.start);
+      }
       if (selection.start.y < widget.index) {
         highlightStart = 0;
       } else if (selection.start.y == widget.index) { 
@@ -73,50 +64,45 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
       } else if (selection.end.y > widget.index) { 
         highlightEnd = text.length;
       }
+    }
 
-      if (highlightStart != null && highlightEnd != null) {
-        highlightTextPainter = TextPainter(
-          text: TextSpan(
-            children: <TextSpan>[
-              //перед выделением
-              TextSpan(
-                text: " " * highlightStart,
-                style: textStyle,
-              ),
-              //выделение
-              TextSpan(
-                text: text.substring(highlightStart,highlightEnd),
-                style: textStyleHighlight,
-              )
-            ]
-          ),
-          textDirection: TextDirection.ltr,
-          textAlign: TextAlign.left,
-        );  
-      }
-      else {
-        highlightTextPainter = TextPainter(
-          text: TextSpan(
-            children: <TextSpan>[
-              //перед выделением
-              TextSpan(
-                text: "",
-                style: textStyle,
-              ),
-              //выделение
-              TextSpan(
-                text: "",
-                style: textStyleHighlight,
-              )
-            ]
-          ),
-          textDirection: TextDirection.ltr,
-          textAlign: TextAlign.left,
-        );
-      }
+    if (highlightStart != null && highlightEnd != null) {
+      textPainter = TextPainter(
+        text: TextSpan(
+          children: <TextSpan>[
+            //перед выделением
+            TextSpan(
+              text: text.substring(0,highlightStart),
+              style: textStyle,
+            ),
+            //выделение
+            TextSpan(
+              text: text.substring(highlightStart,highlightEnd),
+              style: textStyleHighlight,
+            ),
+            //после выделения
+            TextSpan(
+              text: text.substring(highlightEnd),
+              style: textStyle,
+            ),
+          ]
+        ),
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.left,
+      );
+    }
+    else {
+      textPainter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: textStyle,
+        ),
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.left,
+      );
+    }
 
-      highlightTextPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
-    } 
+    textPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
   }
 
   int getCursorOffset(Offset position) {
@@ -143,26 +129,6 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
     controller.forward();
     controller.repeat(reverse: true, period: const Duration(milliseconds: 500));
 
-    highlightTextPainter = TextPainter(
-      text: TextSpan(
-        children: <TextSpan>[
-          //перед выделением
-          TextSpan(
-            text: "",
-            style: textStyle,
-          ),
-          //выделение
-          TextSpan(
-            text: "",
-            style: textStyleHighlight,
-          )
-        ]
-      ),
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.left,
-    );
-
-    highlightTextPainter.layout(minWidth: widget.lineWidth - 80, maxWidth: widget.lineWidth - 80);
   }
 
   @override
@@ -185,12 +151,6 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
             painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20,
                 position: editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null,
                 animationValue: controller.value),
-            foregroundPainter: null,
-          ),
-          CustomPaint(
-            painter: LinePainter(indexPainter, highlightTextPainter, usersOnLine.isEmpty ? 0 : 20,
-                position: editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null
-                ),
             foregroundPainter: null,
           ),
           CustomPaint(
