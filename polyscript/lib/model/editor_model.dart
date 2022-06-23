@@ -53,8 +53,14 @@ class EditorModel extends ChangeNotifier {
     }
   }
 
-  void makeNewLine(int i, String startText) {
-    file.lines.insert(i, startText);
+  void makeNewLine(int lineIndex, String startText) {
+    file.lines.insert(lineIndex, startText);
+
+    notifyListeners();
+  }
+
+  void deleteLine(int lineIndex) {
+    file.lines.removeAt(lineIndex);
 
     notifyListeners();
   }

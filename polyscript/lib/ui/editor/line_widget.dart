@@ -134,7 +134,10 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     //print("hello");
     EditorModel editor = Provider.of<EditorModel>(context);
-    initPainters(editor.file.lines[widget.index], editor.localUser.selection);
+    
+    if (widget.index < editor.file.lines.length) {
+      initPainters(editor.file.lines[widget.index], editor.localUser.selection);
+    }
 
     localUserLineIndex = editor.localUser.cursorPosition.y;
     usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();

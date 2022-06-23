@@ -253,6 +253,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     });
   }
 
+  void deleteLine({required int lineIndex}) {
+    linesList.removeAt(lineIndex);
+
+    setState(() {
+      editor.deleteLine(lineIndex);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     editor = EditorInherit.of(context).editor;
@@ -289,13 +297,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   }
                 });
               },
+              // начало выделение
               onHorizontalDragStart: (details) {
                 editor.updateLocalUser(newSelection: Selection.none());
                 textEditorFocus.requestFocus();
                 highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
               },
+              // отображение выделения
               onHorizontalDragUpdate: (details) {
-                // отображение выделения
                 var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
                 if (highlightStart != null && newPosition != null) {
                   editor.updateLocalUser(
@@ -305,6 +314,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   scrollList(linesList[editor.localUser.cursorPosition.y].currentContext as Element);
                 }
               },
+              // конец выделения
               onHorizontalDragEnd: (details) {
                 highlightStart = null;
               },
@@ -315,6 +325,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   String newLine = "";
                   String secondLine = "";
                   if (keyEvent is! KeyUpEvent) {
+                    // ввод символа
                     if (keyEvent.character != null &&
                         keyEvent.logicalKey != LogicalKeyboardKey.enter &&
                         keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
@@ -326,13 +337,27 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                               .substring(editor.localUser.cursorPosition.x);
                       editor.updateFileModel(
                           lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+                    // стирание символа
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
-                      newLine = editor.file.lines[editor.localUser.cursorPosition.y]
-                              .substring(0, editor.localUser.cursorPosition.x - 1) +
-                          editor.file.lines[editor.localUser.cursorPosition.y]
-                              .substring(editor.localUser.cursorPosition.x);
-                      editor.updateFileModel(
-                          lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                      // удаление строки
+                      if (editor.localUser.cursorPosition.y != 0 && editor.localUser.cursorPosition.x == 0) {
+                        int previousLineLength = editor.file.lines[editor.localUser.cursorPosition.y-1].length;
+                        newLine = editor.file.lines[editor.localUser.cursorPosition.y-1] + editor.file.lines[editor.localUser.cursorPosition.y];
+                        deleteLine(lineIndex: editor.localUser.cursorPosition.y);
+                        editor.updateFileModel(
+                            lineIndex: editor.localUser.cursorPosition.y-1, newText: newLine, inputLength: -1);
+                        editor.updateLocalUser(newPosition: Point(previousLineLength,
+                            editor.localUser.cursorPosition.y-1));
+                      // удаление символа
+                      } else {
+                        newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                                .substring(0, editor.localUser.cursorPosition.x - 1) +
+                            editor.file.lines[editor.localUser.cursorPosition.y]
+                                .substring(editor.localUser.cursorPosition.x);
+                        editor.updateFileModel(
+                            lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                      }
+                    // добавление новой строки
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
                       newLine = editor.file.lines[editor.localUser.cursorPosition.y]
                           .substring(0, editor.localUser.cursorPosition.x);
@@ -344,6 +369,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                       editor.updateLocalUser(newPosition: Point(0, editor.localUser.cursorPosition.y + 1));
                       //переносим остаток на новую линию
                       makeNewLine(previousLineIndex: editor.localUser.cursorPosition.y, startText: secondLine);
+                    // управление стрелочками
                     } else {
                       keyboardNavigation(keyEvent);
                     }
