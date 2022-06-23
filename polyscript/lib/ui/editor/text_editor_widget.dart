@@ -24,11 +24,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   late var preffereCursorPositionX = 0;
   List<GlobalKey<LineWidgetState>> linesList = [];
 
+  late DateTime lastTapTime;
+
   Point<int>? highlightStart;
 
   @override
   void initState() {
     super.initState();
+    lastTapTime = DateTime.now();
     scrollController.addListener(() {});
   }
 
@@ -245,7 +248,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   void makeNewLine({required int previousLineIndex, required String startText}) {
     linesList.insert(previousLineIndex + 1, GlobalKey<LineWidgetState>());
 
-    // в едиторе
     setState(() {
       editor.makeNewLine(previousLineIndex, startText);
     });
@@ -261,14 +263,29 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           builder: ((context, constraints) {
             editorHeight = constraints.maxHeight;
             return GestureDetector(
-              onDoubleTapDown: (details) {},
               onTapDown: (details) {
                 textEditorFocus.requestFocus();
                 context.visitChildElements((element) {
                   var newPosition = getCursorPositionInText(details.globalPosition, element);
                   if (newPosition != null) {
-                    editor.updateLocalUser(newPosition: newPosition, newSelection: Selection.none());
-                    preffereCursorPositionX = newPosition.x;
+                    // двойной клик и выделение слова
+                    if (newPosition == editor.localUser.cursorPosition && DateTime.now().difference(lastTapTime).inMilliseconds < 400) {
+                      int startOfWord = editor.file.lines[newPosition.y].substring(0,newPosition.x).lastIndexOf(' ')+1;
+                      int endOfWord = editor.file.lines[newPosition.y].substring(newPosition.x).indexOf(' ');
+                      if (endOfWord == -1) {
+                        endOfWord = editor.file.lines[newPosition.y].length;
+                      } else {
+                        endOfWord +=newPosition.x;
+                      }
+                      editor.updateLocalUser(newPosition: Point(endOfWord, newPosition.y),
+                        newSelection: Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y)));
+                      preffereCursorPositionX = endOfWord;
+                      
+                    } else { // обычный клик
+                      editor.updateLocalUser(newPosition: newPosition, newSelection: Selection.none());
+                      preffereCursorPositionX = newPosition.x;
+                    }
+                    lastTapTime = DateTime.now();
                   }
                 });
               },
