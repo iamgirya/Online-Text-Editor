@@ -18,9 +18,8 @@ class EditorModel extends ChangeNotifier {
       if (newPosition != null) {
         localUser.cursorPosition = newPosition;
       }
-      if (newSelection != null) {
-        localUser.selection = newSelection;
-      }
+      localUser.selection = newSelection;
+
       notifyListeners();
 
       socket.sink.add(
@@ -39,7 +38,7 @@ class EditorModel extends ChangeNotifier {
     if (lineIndex != null && newText != null && inputLength != null) {
       file.lines[lineIndex] = newText;
 
-      updateLocalUser(newPosition: Point(localUser.cursorPosition.x + inputLength, localUser.cursorPosition.y));
+      updateLocalUser(newPosition: Point(localUser.cursorPosition.x + inputLength, localUser.cursorPosition.y), newSelection: localUser.selection);
 
       // socket.sink.add(
       //   jsonEncode(
@@ -61,6 +60,12 @@ class EditorModel extends ChangeNotifier {
 
   void deleteLine(int lineIndex) {
     file.lines.removeAt(lineIndex);
+
+    notifyListeners();
+  }
+
+  void deleteLines(int startLineIndex, int endLineIndex) {
+    file.lines.removeRange(startLineIndex, endLineIndex);
 
     notifyListeners();
   }

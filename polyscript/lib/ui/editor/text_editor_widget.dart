@@ -255,9 +255,17 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
   void deleteLine({required int lineIndex}) {
     linesList.removeAt(lineIndex);
-
+    
     setState(() {
       editor.deleteLine(lineIndex);
+    });
+  }
+
+  void deleteLines({required int startLineIndex, required int endLineIndex}) {
+    linesList.removeRange(startLineIndex, endLineIndex);
+    
+    setState(() {
+      editor.deleteLines(startLineIndex, endLineIndex);
     });
   }
 
@@ -290,7 +298,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                       preffereCursorPositionX = endOfWord;
                       
                     } else { // обычный клик
-                      editor.updateLocalUser(newPosition: newPosition, newSelection: Selection.none());
+                      editor.updateLocalUser(newPosition: newPosition, newSelection: null);
                       preffereCursorPositionX = newPosition.x;
                     }
                     lastTapTime = DateTime.now();
@@ -299,7 +307,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
               },
               // начало выделение
               onHorizontalDragStart: (details) {
-                editor.updateLocalUser(newSelection: Selection.none());
+                editor.updateLocalUser(newSelection: null);
                 textEditorFocus.requestFocus();
                 highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
               },
@@ -337,25 +345,54 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                               .substring(editor.localUser.cursorPosition.x);
                       editor.updateFileModel(
                           lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
-                    // стирание символа
+                    // стирание
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
-                      // удаление строки
-                      if (editor.localUser.cursorPosition.y != 0 && editor.localUser.cursorPosition.x == 0) {
-                        int previousLineLength = editor.file.lines[editor.localUser.cursorPosition.y-1].length;
-                        newLine = editor.file.lines[editor.localUser.cursorPosition.y-1] + editor.file.lines[editor.localUser.cursorPosition.y];
-                        deleteLine(lineIndex: editor.localUser.cursorPosition.y);
-                        editor.updateFileModel(
-                            lineIndex: editor.localUser.cursorPosition.y-1, newText: newLine, inputLength: -1);
-                        editor.updateLocalUser(newPosition: Point(previousLineLength,
-                            editor.localUser.cursorPosition.y-1));
                       // удаление символа
+                      if (editor.localUser.selection == null)
+                      {
+                        // удаление символа переноса строки
+                        if (editor.localUser.cursorPosition.y != 0 && editor.localUser.cursorPosition.x == 0) {
+                          int previousLineLength = editor.file.lines[editor.localUser.cursorPosition.y-1].length;
+                          newLine = editor.file.lines[editor.localUser.cursorPosition.y-1] + editor.file.lines[editor.localUser.cursorPosition.y];
+                          deleteLine(lineIndex: editor.localUser.cursorPosition.y);
+                          editor.updateFileModel(
+                              lineIndex: editor.localUser.cursorPosition.y-1, newText: newLine, inputLength: -1);
+                          editor.updateLocalUser(newPosition: Point(previousLineLength,
+                              editor.localUser.cursorPosition.y-1));
+                        // удаление символа
+                        } else {
+                          newLine = editor.file.lines[editor.localUser.cursorPosition.y]
+                                  .substring(0, editor.localUser.cursorPosition.x - 1) +
+                              editor.file.lines[editor.localUser.cursorPosition.y]
+                                  .substring(editor.localUser.cursorPosition.x);
+                          editor.updateFileModel(
+                              lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                        }
+                      // удаление выделения
                       } else {
-                        newLine = editor.file.lines[editor.localUser.cursorPosition.y]
-                                .substring(0, editor.localUser.cursorPosition.x - 1) +
-                            editor.file.lines[editor.localUser.cursorPosition.y]
-                                .substring(editor.localUser.cursorPosition.x);
-                        editor.updateFileModel(
-                            lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                        //удаление конца первой строки
+                        newLine = editor.file.lines[editor.localUser.selection!.start.y]
+                            .substring(0, editor.localUser.selection!.start.x);
+                        int oldLineLength = editor.localUser.selection!.start.x;
+                        // в случае, если выделение лишь на одной строке
+                        if (editor.localUser.selection!.end.y == editor.localUser.selection!.start.y) {
+                          newLine += editor.file.lines[editor.localUser.selection!.start.y]
+                            .substring(editor.localUser.selection!.end.x);  
+                          editor.updateFileModel(
+                              lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
+                          editor.updateLocalUser(
+                              newPosition: Point(oldLineLength,editor.localUser.selection!.start.y), newSelection: null);
+                        // выделение на нескольких строках
+                        } else {
+                          newLine += editor.file.lines[editor.localUser.selection!.end.y]
+                            .substring(editor.localUser.selection!.end.x);                         
+                          // удаление строк
+                          deleteLines(startLineIndex: editor.localUser.selection!.start.y+1, endLineIndex: editor.localUser.selection!.end.y+1);
+                          editor.updateFileModel(
+                              lineIndex: editor.localUser.selection!.start.y, newText: newLine, inputLength: -1);
+                          editor.updateLocalUser(
+                              newPosition: Point(oldLineLength,editor.localUser.selection!.start.y), newSelection: null);
+                        }
                       }
                     // добавление новой строки
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {

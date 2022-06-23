@@ -52,7 +52,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
     //обновление выделения
     int? highlightStart;
     int? highlightEnd;
-    if (selection != null && selection.start.y != -1) {
+    if (selection != null) {
       if (selection.start.y > selection.end.y ||
           (selection.start.y == selection.end.y && selection.start.x > selection.end.x)) {
         selection = Selection(selection.end, selection.start);

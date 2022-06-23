@@ -10,10 +10,8 @@ class User {
 }
 
 class Selection {
-  Point<int> start = const Point(-1,-1);
-  Point<int> end = const Point(-1,-1);
+  Point<int> start;
+  Point<int> end;
 
-  Selection.none();
   Selection(this.start, this.end);
-  
 }
