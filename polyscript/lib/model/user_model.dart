@@ -13,5 +13,16 @@ class Selection {
   Point<int> start;
   Point<int> end;
 
+  Selection get readyToWork {
+    if (_isRevert) {
+      return _getRevert;
+    }
+    else {
+      return this;
+    }
+  }
+  bool get _isRevert  => (start.y > end.y || (start.y == end.y && start.x > end.x));
+  Selection get _getRevert => Selection(end, start);
+
   Selection(this.start, this.end);
 }

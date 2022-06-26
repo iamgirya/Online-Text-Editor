@@ -144,8 +144,27 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     lineHeight = max(20, textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20));
 
+    Color containerColor;
+    
+    if (editor.localUser.cursorPosition.y == widget.index) {
+      containerColor = Colors.grey.withOpacity(0.2);
+    } else {
+      containerColor =  Colors.transparent;
+    }
+
+    int? background;
+    if (editor.localUser.selection != null && editor.localUser.selection!.start.y <= widget.index && editor.localUser.selection!.end.y > widget.index) {
+      if (editor.localUser.selection!.start.y == widget.index) {
+        background = editor.localUser.selection!.start.x;
+      } else {
+        background = 0;
+      }
+    } else {
+      background = null;
+    }
+
     return Container(
-      color: editor.localUser.cursorPosition.y == widget.index ? Colors.grey.withOpacity(0.2) : Colors.transparent,
+      color: containerColor,
       width: widget.lineWidth,
       height: lineHeight,
       child: Stack(
@@ -153,7 +172,8 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
           CustomPaint(
             painter: LinePainter(indexPainter, textPainter, usersOnLine.isEmpty ? 0 : 20,
                 position: editor.localUser.cursorPosition.y == widget.index ? editor.localUser.cursorPosition.x : null,
-                animationValue: controller.value),
+                animationValue: controller.value,
+                background: background),
             foregroundPainter: null,
           ),
           CustomPaint(
@@ -178,17 +198,28 @@ class LinePainter extends CustomPainter {
   final TextPainter textPainter;
   final TextPainter indexPainter;
   final int? position;
+  final int? background;
   final double? animationValue;
   final double textOffset;
-  LinePainter(this.indexPainter, this.textPainter, this.textOffset, {this.position, this.animationValue});
+  LinePainter(this.indexPainter, this.textPainter, this.textOffset, {this.position, this.animationValue, this.background});
 
   @override
   void paint(Canvas canvas, Size size) {
+    var cursorPaint = Paint();
+    cursorPaint.color = Colors.blue;
+
     indexPainter.paint(canvas, Offset(48 - indexPainter.width, textOffset));
+    
+    if (background != null) {
+      var cursorOffset = textPainter.getOffsetForCaret(TextPosition(offset: background!), Rect.zero);
+      canvas.drawRRect(
+          roundRect(Rect.fromLTWH(cursorOffset.dx + 64, cursorOffset.dy + textOffset, 2000, 20), [1, 1, 1, 1]),
+          cursorPaint);
+    }
+
     textPainter.paint(canvas, Offset(64, textOffset));
 
     if (position != null && animationValue != null) {
-      var cursorPaint = Paint();
       cursorPaint.color = Colors.black.withOpacity(animationValue!);
       var cursorOffset = textPainter.getOffsetForCaret(TextPosition(offset: position!), Rect.zero);
       canvas.drawRRect(

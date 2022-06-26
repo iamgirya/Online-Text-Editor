@@ -370,28 +370,31 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                         }
                       // удаление выделения
                       } else {
+
+                        Selection select = editor.localUser.selection!.readyToWork;
+                        
                         //удаление конца первой строки
-                        newLine = editor.file.lines[editor.localUser.selection!.start.y]
-                            .substring(0, editor.localUser.selection!.start.x);
-                        int oldLineLength = editor.localUser.selection!.start.x;
+                        newLine = editor.file.lines[select.start.y]
+                            .substring(0, select.start.x);
+                        int oldLineLength = select.start.x;
                         // в случае, если выделение лишь на одной строке
-                        if (editor.localUser.selection!.end.y == editor.localUser.selection!.start.y) {
-                          newLine += editor.file.lines[editor.localUser.selection!.start.y]
-                            .substring(editor.localUser.selection!.end.x);  
+                        if (select.end.y == select.start.y) {
+                          newLine += editor.file.lines[select.start.y]
+                            .substring(select.end.x);  
                           editor.updateFileModel(
                               lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
                           editor.updateLocalUser(
-                              newPosition: Point(oldLineLength,editor.localUser.selection!.start.y), newSelection: null);
+                              newPosition: Point(oldLineLength,select.start.y), newSelection: null);
                         // выделение на нескольких строках
                         } else {
-                          newLine += editor.file.lines[editor.localUser.selection!.end.y]
-                            .substring(editor.localUser.selection!.end.x);                         
+                          newLine += editor.file.lines[select.end.y]
+                            .substring(select.end.x);                         
                           // удаление строк
-                          deleteLines(startLineIndex: editor.localUser.selection!.start.y+1, endLineIndex: editor.localUser.selection!.end.y+1);
+                          deleteLines(startLineIndex: select.start.y+1, endLineIndex: select.end.y+1);
                           editor.updateFileModel(
-                              lineIndex: editor.localUser.selection!.start.y, newText: newLine, inputLength: -1);
+                              lineIndex: select.start.y, newText: newLine, inputLength: -1);
                           editor.updateLocalUser(
-                              newPosition: Point(oldLineLength,editor.localUser.selection!.start.y), newSelection: null);
+                              newPosition: Point(oldLineLength,select.start.y), newSelection: null);
                         }
                       }
                     // добавление новой строки
