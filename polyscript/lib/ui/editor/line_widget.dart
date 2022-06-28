@@ -216,7 +216,8 @@ class LinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     var cursorPaint = Paint();
-    cursorPaint.color = Color.fromARGB(255, 29, 255, 8);
+    cursorPaint.color = Colors.blue.withOpacity(0.5);
+    const double fullwidth = 4000;
 
     indexPainter.paint(canvas, Offset(48 - indexPainter.width, textOffset));
     
@@ -225,15 +226,15 @@ class LinePainter extends CustomPainter {
       if (background!.y == -1) {
         if (textPainter.height == LineWidget.baseHeight) {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, 4000, 20), [1, 1, 1, 1]),
+            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
             cursorPaint);
         } else {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, 4000, 20), [1, 1, 1, 1]),
+            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
             cursorPaint);
           for (double i = cursorOffsetStart.dy+LineWidget.baseHeight; i < textPainter.height; i+=LineWidget.baseHeight) {
             canvas.drawRRect(
-              roundRect(Rect.fromLTWH(0+ 64, i + textOffset, 4000, 20), [1, 1, 1, 1]),
+              roundRect(Rect.fromLTWH(0+ 64, i + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
               cursorPaint);
           }
         }
@@ -242,19 +243,19 @@ class LinePainter extends CustomPainter {
         var cursorOffsetEnd = textPainter.getOffsetForCaret(TextPosition(offset: background!.y), Rect.zero);
         if (cursorOffsetStart.dy == cursorOffsetEnd.dy) {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, cursorOffsetEnd.dx-cursorOffsetStart.dx, 20), [1, 1, 1, 1]),
+            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, cursorOffsetEnd.dx-cursorOffsetStart.dx, LineWidget.baseHeight), [1, 1, 1, 1]),
             cursorPaint);
         } else {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, 4000, 20), [1, 1, 1, 1]),
+            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
             cursorPaint);
           for (double i = cursorOffsetStart.dy+LineWidget.baseHeight; i < cursorOffsetEnd.dy; i+=LineWidget.baseHeight) {
             canvas.drawRRect(
-              roundRect(Rect.fromLTWH(0+ 64, i + textOffset, 4000, 20), [1, 1, 1, 1]),
+              roundRect(Rect.fromLTWH(0+ 64, i + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
               cursorPaint);
           }
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(0 + 64, cursorOffsetEnd.dy + textOffset, cursorOffsetEnd.dx, 20), [1, 1, 1, 1]),
+            roundRect(Rect.fromLTWH(0 + 64, cursorOffsetEnd.dy + textOffset, cursorOffsetEnd.dx, LineWidget.baseHeight), [1, 1, 1, 1]),
             cursorPaint);
         }
       }
