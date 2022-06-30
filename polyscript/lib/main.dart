@@ -31,9 +31,7 @@ class MainWidget extends StatefulWidget {
 }
 
 class _MainWidgetState extends State<MainWidget> {
-  final EditorModel editor = EditorModel.createFile(
-    User(const Point(0, 2), "user_" + Random().nextInt(100).toString(), Colors.red),
-  );
+  final EditorModel editor = EditorModel.createFile("user_" + Random().nextInt(100).toString());
 
   @override
   Widget build(BuildContext context) {

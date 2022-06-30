@@ -65,7 +65,7 @@ class CloudFile {
 
     removeUser(removedUser) {
         this.users.pop(removedUser)
-
+        console.log(removedUser)
         this.users.forEach((user) => {
             user.socket.send(
                 JSON.stringify({
@@ -74,6 +74,11 @@ class CloudFile {
                 })
             )
         })
+    }
+
+    insertText(text, position) {
+        //this.lines[position[1]] = 
+            //this.lines[position[0]].substring(0, position[1]) + text + this.lines[position[0]].substring(position[1])
     }
 }
 
@@ -116,6 +121,17 @@ wsServer.on('connection', function (ws) {
                         "action":"user_update_position",
                         "username": message.username,
                         "newPosition": message.newPosition,
+                    })
+                )
+            })
+        } else if (message.action == "insert_text") {
+            file.users.forEach((user) => {
+                user.socket.send(
+                    JSON.stringify({
+                        "action":"insert_text",
+                        "username": message.username,
+                        "position": message.position,
+                        "text": message.text
                     })
                 )
             })

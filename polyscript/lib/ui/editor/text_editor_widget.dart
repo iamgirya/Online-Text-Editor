@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:polyscript/model/actions/insert_text_action.dart';
 import 'package:polyscript/model/editor_model.dart';
 import 'package:polyscript/model/user_model.dart';
 import 'package:polyscript/ui/editor/line_widget.dart';
@@ -255,7 +256,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
   void deleteLine({required int lineIndex}) {
     linesList.removeAt(lineIndex);
-    
+
     setState(() {
       editor.deleteLine(lineIndex);
     });
@@ -263,7 +264,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
   void deleteLines({required int startLineIndex, required int endLineIndex}) {
     linesList.removeRange(startLineIndex, endLineIndex);
-    
+
     setState(() {
       editor.deleteLines(startLineIndex, endLineIndex);
     });
@@ -285,19 +286,22 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   var newPosition = getCursorPositionInText(details.globalPosition, element);
                   if (newPosition != null) {
                     // двойной клик и выделение слова
-                    if (newPosition == editor.localUser.cursorPosition && DateTime.now().difference(lastTapTime).inMilliseconds < 400) {
-                      int startOfWord = editor.file.lines[newPosition.y].substring(0,newPosition.x).lastIndexOf(' ')+1;
+                    if (newPosition == editor.localUser.cursorPosition &&
+                        DateTime.now().difference(lastTapTime).inMilliseconds < 400) {
+                      int startOfWord =
+                          editor.file.lines[newPosition.y].substring(0, newPosition.x).lastIndexOf(' ') + 1;
                       int endOfWord = editor.file.lines[newPosition.y].substring(newPosition.x).indexOf(' ');
                       if (endOfWord == -1) {
                         endOfWord = editor.file.lines[newPosition.y].length;
                       } else {
-                        endOfWord +=newPosition.x;
+                        endOfWord += newPosition.x;
                       }
-                      editor.updateLocalUser(newPosition: Point(endOfWord, newPosition.y),
-                        newSelection: Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y)));
+                      editor.updateLocalUser(
+                          newPosition: Point(endOfWord, newPosition.y),
+                          newSelection: Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y)));
                       preffereCursorPositionX = endOfWord;
-                      
-                    } else { // обычный клик
+                    } else {
+                      // обычный клик
                       editor.updateLocalUser(newPosition: newPosition, newSelection: null);
                       preffereCursorPositionX = newPosition.x;
                     }
@@ -356,59 +360,48 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   if (keyEvent is! KeyUpEvent) {
                     // ввод символа
                     if (keyEvent.character != null &&
-                      keyEvent.logicalKey != LogicalKeyboardKey.enter &&
-                      keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
+                        keyEvent.logicalKey != LogicalKeyboardKey.enter &&
+                        keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
                       if (editor.localUser.selection == null) {
-                        newLine = "";
-                        newLine = editor.file.lines[editor.localUser.cursorPosition.y]
-                                .substring(0, editor.localUser.cursorPosition.x) +
-                            keyEvent.character! +
-                            editor.file.lines[editor.localUser.cursorPosition.y]
-                                .substring(editor.localUser.cursorPosition.x);
-                        editor.updateFileModel(
-                            lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: 1);
+                        var action = InsertTextAction(
+                            editor.localUserName, keyEvent.character!, editor.localUser.cursorPosition);
+                        editor.sendJSON(action.toJson());
                       } else {
                         Selection select = editor.localUser.selection!.readyToWork;
-                        
+
                         //удаление конца первой строки
-                        newLine = editor.file.lines[select.start.y]
-                            .substring(0, select.start.x) + keyEvent.character!;
-                        int oldLineLength = select.start.x+1;
+                        newLine = editor.file.lines[select.start.y].substring(0, select.start.x) + keyEvent.character!;
+                        int oldLineLength = select.start.x + 1;
                         // в случае, если выделение лишь на одной строке
                         if (select.end.y == select.start.y) {
-                          newLine +=  editor.file.lines[select.start.y]
-                            .substring(select.end.x);  
+                          newLine += editor.file.lines[select.start.y].substring(select.end.x);
                           editor.updateFileModel(
                               lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
-                          editor.updateLocalUser(
-                              newPosition: Point(oldLineLength,select.start.y), newSelection: null);
-                        // выделение на нескольких строках
+                          editor.updateLocalUser(newPosition: Point(oldLineLength, select.start.y), newSelection: null);
+                          // выделение на нескольких строках
                         } else {
-                          newLine += editor.file.lines[select.end.y]
-                            .substring(select.end.x);                         
+                          newLine += editor.file.lines[select.end.y].substring(select.end.x);
                           // удаление строк
-                          deleteLines(startLineIndex: select.start.y+1, endLineIndex: select.end.y+1);
-                          editor.updateFileModel(
-                              lineIndex: select.start.y, newText: newLine, inputLength: -1);
-                          editor.updateLocalUser(
-                              newPosition: Point(oldLineLength,select.start.y), newSelection: null);
+                          deleteLines(startLineIndex: select.start.y + 1, endLineIndex: select.end.y + 1);
+                          editor.updateFileModel(lineIndex: select.start.y, newText: newLine, inputLength: -1);
+                          editor.updateLocalUser(newPosition: Point(oldLineLength, select.start.y), newSelection: null);
                         }
                       }
-                    // стирание
+                      // стирание
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
                       // удаление символа
-                      if (editor.localUser.selection == null)
-                      {
+                      if (editor.localUser.selection == null) {
                         // удаление символа переноса строки
                         if (editor.localUser.cursorPosition.y != 0 && editor.localUser.cursorPosition.x == 0) {
-                          int previousLineLength = editor.file.lines[editor.localUser.cursorPosition.y-1].length;
-                          newLine = editor.file.lines[editor.localUser.cursorPosition.y-1] + editor.file.lines[editor.localUser.cursorPosition.y];
+                          int previousLineLength = editor.file.lines[editor.localUser.cursorPosition.y - 1].length;
+                          newLine = editor.file.lines[editor.localUser.cursorPosition.y - 1] +
+                              editor.file.lines[editor.localUser.cursorPosition.y];
                           deleteLine(lineIndex: editor.localUser.cursorPosition.y);
                           editor.updateFileModel(
-                              lineIndex: editor.localUser.cursorPosition.y-1, newText: newLine, inputLength: -1);
-                          editor.updateLocalUser(newPosition: Point(previousLineLength,
-                              editor.localUser.cursorPosition.y-1));
-                        // удаление символа
+                              lineIndex: editor.localUser.cursorPosition.y - 1, newText: newLine, inputLength: -1);
+                          editor.updateLocalUser(
+                              newPosition: Point(previousLineLength, editor.localUser.cursorPosition.y - 1));
+                          // удаление символа
                         } else {
                           newLine = editor.file.lines[editor.localUser.cursorPosition.y]
                                   .substring(0, editor.localUser.cursorPosition.x - 1) +
@@ -417,36 +410,29 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                           editor.updateFileModel(
                               lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
                         }
-                      // удаление выделения
+                        // удаление выделения
                       } else {
-
                         Selection select = editor.localUser.selection!.readyToWork;
-                        
+
                         //удаление конца первой строки
-                        newLine = editor.file.lines[select.start.y]
-                            .substring(0, select.start.x);
+                        newLine = editor.file.lines[select.start.y].substring(0, select.start.x);
                         int oldLineLength = select.start.x;
                         // в случае, если выделение лишь на одной строке
                         if (select.end.y == select.start.y) {
-                          newLine += editor.file.lines[select.start.y]
-                            .substring(select.end.x);  
+                          newLine += editor.file.lines[select.start.y].substring(select.end.x);
                           editor.updateFileModel(
                               lineIndex: editor.localUser.cursorPosition.y, newText: newLine, inputLength: -1);
-                          editor.updateLocalUser(
-                              newPosition: Point(oldLineLength,select.start.y), newSelection: null);
-                        // выделение на нескольких строках
+                          editor.updateLocalUser(newPosition: Point(oldLineLength, select.start.y), newSelection: null);
+                          // выделение на нескольких строках
                         } else {
-                          newLine += editor.file.lines[select.end.y]
-                            .substring(select.end.x);                         
+                          newLine += editor.file.lines[select.end.y].substring(select.end.x);
                           // удаление строк
-                          deleteLines(startLineIndex: select.start.y+1, endLineIndex: select.end.y+1);
-                          editor.updateFileModel(
-                              lineIndex: select.start.y, newText: newLine, inputLength: -1);
-                          editor.updateLocalUser(
-                              newPosition: Point(oldLineLength,select.start.y), newSelection: null);
+                          deleteLines(startLineIndex: select.start.y + 1, endLineIndex: select.end.y + 1);
+                          editor.updateFileModel(lineIndex: select.start.y, newText: newLine, inputLength: -1);
+                          editor.updateLocalUser(newPosition: Point(oldLineLength, select.start.y), newSelection: null);
                         }
                       }
-                    // добавление новой строки
+                      // добавление новой строки
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
                       newLine = editor.file.lines[editor.localUser.cursorPosition.y]
                           .substring(0, editor.localUser.cursorPosition.x);
@@ -458,7 +444,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                       editor.updateLocalUser(newPosition: Point(0, editor.localUser.cursorPosition.y + 1));
                       //переносим остаток на новую линию
                       makeNewLine(previousLineIndex: editor.localUser.cursorPosition.y, startText: secondLine);
-                    // управление стрелочками
+                      // управление стрелочками
                     } else {
                       keyboardNavigation(keyEvent);
                     }

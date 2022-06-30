@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 
-const webSocket = new WebSocket('ws://127.0.0.1:8081');
+const webSocket = new WebSocket('ws://178.20.41.205:8081');
 
 webSocket.on('message', function (msg) {
     console.log("message: " + msg);
@@ -10,7 +10,7 @@ webSocket.on('message', function (msg) {
 webSocket.onopen = function() {
     console.log("open!");
     webSocket.send(JSON.stringify({
-        'action': "login",
-        'username': 'delta_null',
+        'action': "spam",
+        //'username': 'delta_null',
     }));
 };

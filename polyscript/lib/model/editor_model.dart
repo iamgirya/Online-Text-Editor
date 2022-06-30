@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:polyscript/model/actions/insert_text_action.dart';
 import 'package:polyscript/model/file_model.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -10,8 +11,9 @@ import 'user_model.dart';
 class EditorModel extends ChangeNotifier {
   late FileModel file;
   late List<User> users;
+  late String localUserName;
   late WebSocketChannel socket;
-  User localUser;
+  User get localUser => users.firstWhere((element) => element.name == localUserName);
 
   void updateLocalUser({Point<int>? newPosition, Selection? newSelection}) {
     if (newPosition != null || newSelection != null) {
@@ -38,17 +40,9 @@ class EditorModel extends ChangeNotifier {
     if (lineIndex != null && newText != null && inputLength != null) {
       file.lines[lineIndex] = newText;
 
-      updateLocalUser(newPosition: Point(localUser.cursorPosition.x + inputLength, localUser.cursorPosition.y), newSelection: localUser.selection);
-
-      // socket.sink.add(
-      //   jsonEncode(
-      //     {
-      //       "action": "position_update",
-      //       "username": localUser.name,
-      //       "newPosition": [localUser.cursorPosition.x, localUser.cursorPosition.y],
-      //     },
-      //   ),
-      // );
+      updateLocalUser(
+          newPosition: Point(localUser.cursorPosition.x + inputLength, localUser.cursorPosition.y),
+          newSelection: localUser.selection);
     }
   }
 
@@ -70,8 +64,18 @@ class EditorModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  EditorModel.createFile(this.localUser) {
+  void sendJSON(dynamic json) {
+    socket.sink.add(json);
+  }
+
+  EditorModel.createFile(this.localUserName) {
+    print("new connection!");
+    users = [User(const Point(0, 0), localUserName, Colors.indigo)];
+
     socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
+
+    socket.stream.listen(listenServer);
+
     socket.sink.add(
       jsonEncode(
         {
@@ -80,9 +84,7 @@ class EditorModel extends ChangeNotifier {
         },
       ),
     );
-    socket.stream.listen(listenServer);
 
-    users = [];
     file = FileModel(
       "test",
       -1,
@@ -117,41 +119,55 @@ class EditorModel extends ChangeNotifier {
 
   void listenServer(message) {
     var json = jsonDecode(message);
-    print(message);
-    if (json["action"] == "new_user") {
-      var user = jsonDecode(json["user"]);
 
-      var username = user["user_name"].toString();
+    switch (json["action"]) {
+      case "new_user":
+        var user = jsonDecode(json["user"]);
+        var username = user["user_name"].toString();
 
-      if (username != localUser.name) {
-        var point = user["position"];
-        users.add(User(Point(point[0], point[1]), username, Colors.indigo));
+        if (username != localUser.name) {
+          var point = user["position"];
+          users.add(User(Point(point[0], point[1]), username, Colors.indigo));
+          notifyListeners();
+        }
+        break;
+
+      case "user_update_position":
+        var username = json["username"].toString();
+        var userIndex = users.indexWhere((user) => user.name == username);
+
+        if (userIndex != -1) {
+          var point = json["newPosition"];
+          users[userIndex].cursorPosition = Point(point[0], point[1]);
+          notifyListeners();
+        }
+        break;
+
+      case "user_exit":
+        var username = json["username"].toString();
+        users.removeWhere((user) => user.name == username);
         notifyListeners();
-      }
-    } else if (json["action"] == "user_update_position") {
-      var username = json["username"].toString();
-      var userIndex = users.indexWhere((user) => user.name == username);
+        break;
 
-      if (userIndex != -1) {
-        var point = json["newPosition"];
-        users[userIndex].cursorPosition = Point(point[0], point[1]);
+      case "send_file_state":
+        var jsonUsers = json["users"];
+
+        for (var user in jsonUsers) {
+          var userJson = jsonDecode(user);
+          var point = userJson["position"];
+
+          users.add(User(Point(point[0], point[1]), userJson["username"], Colors.indigo));
+        }
+
         notifyListeners();
-      }
-    } else if (json["action"] == "user_exit") {
-      var username = json["username"].toString();
-      users.removeWhere((user) => user.name == username);
-      notifyListeners();
-    } else if (json["action"] == "send_file_state") {
-      var jsonUsers = json["users"];
+        break;
 
-      for (var user in jsonUsers) {
-        var userJson = jsonDecode(user);
-        var point = userJson["position"];
+      case "insert_text":
+        var action = InsertTextAction.fromJson(json);
+        action.execute(this);
+        notifyListeners();
 
-        users.add(User(Point(point[0], point[1]), userJson["username"], Colors.indigo));
-      }
-
-      notifyListeners();
+        break;
     }
   }
 }
