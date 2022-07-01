@@ -10,7 +10,7 @@ const textStyle = TextStyle(
   decorationStyle: null,
 );
 
-var textStyleHighlight = TextStyle(
+var textStyleHighlight = const TextStyle(
   fontFamily: "Roboto",
   fontStyle: FontStyle.normal,
   //background: Paint()..color = Colors.blue,

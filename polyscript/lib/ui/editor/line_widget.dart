@@ -132,9 +132,8 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    //print("hello");
     EditorModel editor = Provider.of<EditorModel>(context);
-    
+
     if (widget.index < editor.file.lines.length) {
       initPainters(editor.file.lines[widget.index], editor.localUser.selection);
     }
@@ -142,24 +141,26 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
     localUserLineIndex = editor.localUser.cursorPosition.y;
     usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
 
-    lineHeight = max(20, textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20));
+    lineHeight = max(20 + (usersOnLine.isEmpty ? 0 : 20),
+        textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20));
+    //print(lineHeight);
 
     Color containerColor;
-    
+
     if (editor.localUser.cursorPosition.y == widget.index) {
       containerColor = Colors.grey.withOpacity(0.2);
     } else {
-      containerColor =  Colors.transparent;
+      containerColor = Colors.transparent;
     }
 
     Point<int>? background;
-    if (editor.localUser.selection != null) {
-      Selection selection = editor.localUser.selection!.readyToWork;
+    if (!editor.localUser.selection.isEmpty) {
+      Selection selection = editor.localUser.selection.readyToWork;
       if (selection.start.y <= widget.index && selection.end.y > widget.index) {
         if (selection.start.y == widget.index) {
           background = Point(selection.start.x, -1);
         } else {
-          background = const Point(0,-1);
+          background = const Point(0, -1);
         }
       } else if (selection.start.y <= widget.index && selection.end.y == widget.index) {
         if (selection.start.y == widget.index) {
@@ -170,7 +171,6 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
       } else {
         background = null;
       }
-
     }
 
     return Container(
@@ -211,7 +211,8 @@ class LinePainter extends CustomPainter {
   final Point<int>? background;
   final double? animationValue;
   final double textOffset;
-  LinePainter(this.indexPainter, this.textPainter, this.textOffset, {this.position, this.animationValue, this.background});
+  LinePainter(this.indexPainter, this.textPainter, this.textOffset,
+      {this.position, this.animationValue, this.background});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -220,43 +221,60 @@ class LinePainter extends CustomPainter {
     const double fullwidth = 4000;
 
     indexPainter.paint(canvas, Offset(48 - indexPainter.width, textOffset));
-    
+
     if (background != null) {
       var cursorOffsetStart = textPainter.getOffsetForCaret(TextPosition(offset: background!.x), Rect.zero);
       if (background!.y == -1) {
         if (textPainter.height == LineWidget.baseHeight) {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
-            cursorPaint);
+              roundRect(
+                  Rect.fromLTWH(
+                      cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight),
+                  [1, 1, 1, 1]),
+              cursorPaint);
         } else {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
-            cursorPaint);
-          for (double i = cursorOffsetStart.dy+LineWidget.baseHeight; i < textPainter.height; i+=LineWidget.baseHeight) {
-            canvas.drawRRect(
-              roundRect(Rect.fromLTWH(0+ 64, i + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
+              roundRect(
+                  Rect.fromLTWH(
+                      cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight),
+                  [1, 1, 1, 1]),
               cursorPaint);
+          for (double i = cursorOffsetStart.dy + LineWidget.baseHeight;
+              i < textPainter.height;
+              i += LineWidget.baseHeight) {
+            canvas.drawRRect(
+                roundRect(Rect.fromLTWH(0 + 64, i + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
+                cursorPaint);
           }
         }
-
       } else {
         var cursorOffsetEnd = textPainter.getOffsetForCaret(TextPosition(offset: background!.y), Rect.zero);
         if (cursorOffsetStart.dy == cursorOffsetEnd.dy) {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, cursorOffsetEnd.dx-cursorOffsetStart.dx, LineWidget.baseHeight), [1, 1, 1, 1]),
-            cursorPaint);
+              roundRect(
+                  Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset,
+                      cursorOffsetEnd.dx - cursorOffsetStart.dx, LineWidget.baseHeight),
+                  [1, 1, 1, 1]),
+              cursorPaint);
         } else {
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
-            cursorPaint);
-          for (double i = cursorOffsetStart.dy+LineWidget.baseHeight; i < cursorOffsetEnd.dy; i+=LineWidget.baseHeight) {
-            canvas.drawRRect(
-              roundRect(Rect.fromLTWH(0+ 64, i + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
+              roundRect(
+                  Rect.fromLTWH(
+                      cursorOffsetStart.dx + 64, cursorOffsetStart.dy + textOffset, fullwidth, LineWidget.baseHeight),
+                  [1, 1, 1, 1]),
               cursorPaint);
+          for (double i = cursorOffsetStart.dy + LineWidget.baseHeight;
+              i < cursorOffsetEnd.dy;
+              i += LineWidget.baseHeight) {
+            canvas.drawRRect(
+                roundRect(Rect.fromLTWH(0 + 64, i + textOffset, fullwidth, LineWidget.baseHeight), [1, 1, 1, 1]),
+                cursorPaint);
           }
           canvas.drawRRect(
-            roundRect(Rect.fromLTWH(0 + 64, cursorOffsetEnd.dy + textOffset, cursorOffsetEnd.dx, LineWidget.baseHeight), [1, 1, 1, 1]),
-            cursorPaint);
+              roundRect(
+                  Rect.fromLTWH(0 + 64, cursorOffsetEnd.dy + textOffset, cursorOffsetEnd.dx, LineWidget.baseHeight),
+                  [1, 1, 1, 1]),
+              cursorPaint);
         }
       }
     }

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:polyscript/model/actions/insert_text_action.dart';
+import 'package:polyscript/model/actions/replace_text_action.dart';
 import 'package:polyscript/model/file_model.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -19,8 +19,12 @@ class EditorModel extends ChangeNotifier {
     if (newPosition != null || newSelection != null) {
       if (newPosition != null) {
         localUser.cursorPosition = newPosition;
+        localUser.selection = Selection(newPosition, newPosition);
       }
-      localUser.selection = newSelection;
+
+      if (newSelection != null) {
+        localUser.selection = newSelection;
+      }
 
       notifyListeners();
 
@@ -33,16 +37,6 @@ class EditorModel extends ChangeNotifier {
           },
         ),
       );
-    }
-  }
-
-  void updateFileModel({int? lineIndex, String? newText, int? inputLength}) {
-    if (lineIndex != null && newText != null && inputLength != null) {
-      file.lines[lineIndex] = newText;
-
-      updateLocalUser(
-          newPosition: Point(localUser.cursorPosition.x + inputLength, localUser.cursorPosition.y),
-          newSelection: localUser.selection);
     }
   }
 
@@ -70,9 +64,20 @@ class EditorModel extends ChangeNotifier {
 
   EditorModel.createFile(this.localUserName) {
     print("new connection!");
-    users = [User(const Point(0, 0), localUserName, Colors.indigo)];
+    users = [
+      User(
+        const Point(0, 0),
+        localUserName,
+        Colors.indigo,
+        Selection(
+          const Point(0, 0),
+          const Point(0, 0),
+        ),
+      )
+    ];
 
-    socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
+    //socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
+    socket = WebSocketChannel.connect(Uri.parse("ws://127.0.0.1:8081"));
 
     socket.stream.listen(listenServer);
 
@@ -89,30 +94,36 @@ class EditorModel extends ChangeNotifier {
       "test",
       -1,
       [
-        "test",
-        "flexing",
-        "very long line very long line very long line very long line very long line",
-        "flexing",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "test",
-        "test",
-        "test",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
-        "very long line very long line very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
+        "very long line very long line very long line",
       ],
     );
   }
@@ -127,7 +138,17 @@ class EditorModel extends ChangeNotifier {
 
         if (username != localUser.name) {
           var point = user["position"];
-          users.add(User(Point(point[0], point[1]), username, Colors.indigo));
+          users.add(
+            User(
+              Point(point[0], point[1]),
+              username,
+              Colors.indigo,
+              Selection(
+                const Point(0, 0),
+                const Point(0, 0),
+              ),
+            ),
+          );
           notifyListeners();
         }
         break;
@@ -156,17 +177,24 @@ class EditorModel extends ChangeNotifier {
           var userJson = jsonDecode(user);
           var point = userJson["position"];
 
-          users.add(User(Point(point[0], point[1]), userJson["username"], Colors.indigo));
+          users.add(User(
+            Point(point[0], point[1]),
+            userJson["username"],
+            Colors.indigo,
+            Selection(
+              const Point(0, 0),
+              const Point(0, 0),
+            ),
+          ));
         }
 
         notifyListeners();
         break;
 
-      case "insert_text":
-        var action = InsertTextAction.fromJson(json);
+      case "replace_text":
+        var action = ReplaceTextAction.fromJson(json);
         action.execute(this);
         notifyListeners();
-
         break;
     }
   }

@@ -65,7 +65,7 @@ class CloudFile {
 
     removeUser(removedUser) {
         this.users.pop(removedUser)
-        console.log(removedUser)
+        console.log(removedUser.name)
         this.users.forEach((user) => {
             user.socket.send(
                 JSON.stringify({
@@ -74,11 +74,6 @@ class CloudFile {
                 })
             )
         })
-    }
-
-    insertText(text, position) {
-        //this.lines[position[1]] = 
-            //this.lines[position[0]].substring(0, position[1]) + text + this.lines[position[0]].substring(position[1])
     }
 }
 
@@ -124,19 +119,20 @@ wsServer.on('connection', function (ws) {
                     })
                 )
             })
-        } else if (message.action == "insert_text") {
+        } else if (message.action == "replace_text") {
             file.users.forEach((user) => {
                 user.socket.send(
                     JSON.stringify({
-                        "action":"insert_text",
+                        "action": message.action,
                         "username": message.username,
-                        "position": message.position,
+                        "selection": message.selection,
                         "text": message.text
                     })
                 )
             })
         }
     })
+    
     // Делаем действие при выходе пользователя из чата
     ws.on('close', function () {
         console.log("closed(");
