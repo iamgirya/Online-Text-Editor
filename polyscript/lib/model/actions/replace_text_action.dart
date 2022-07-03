@@ -71,13 +71,14 @@ class ReplaceTextAction with EditorAction {
       return;
     }
 
-    var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
-    var suffix = model.file.lines[selectedRange.end.y].first.substring(selectedRange.end.x);
+    var prefix = model.file.lines[selectedRange.start.y].substring(0, selectedRange.start.x);
+    var suffix = model.file.lines[selectedRange.end.y].substring(selectedRange.end.x);
 
-    model.file.lines.removeRange(selectedRange.start.y, selectedRange.end.y+1);
+    model.file.lines.removeRange(selectedRange.start.y, selectedRange.end.y + 1);
+    model.lineKeys.removeRange(selectedRange.start.y, selectedRange.end.y + 1);
 
-    model.file.lines.insert(selectedRange.start.y, Pair(prefix + suffix, GlobalKey()));
-
+    model.file.lines.insert(selectedRange.start.y, prefix + suffix);
+    model.lineKeys.insert(selectedRange.start.y, GlobalKey());
     for (var user in model.users) {
       if (user.name == username || selectedRange.constaint(user.cursorPosition)) {
         user.cursorPosition = Point(
@@ -113,11 +114,11 @@ class ReplaceTextAction with EditorAction {
   void insertText(EditorModel model) {
     var lines = insertingText.split("\n");
 
-    var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
-    var suffix = model.file.lines[selectedRange.start.y].first.substring(selectedRange.start.x);
+    var prefix = model.file.lines[selectedRange.start.y].substring(0, selectedRange.start.x);
+    var suffix = model.file.lines[selectedRange.start.y].substring(selectedRange.start.x);
 
     if (lines.length == 1) {
-      model.file.lines[selectedRange.start.y] = Pair(prefix + lines[0] + suffix, model.file.lines[selectedRange.start.y].second);
+      model.file.lines[selectedRange.start.y] = prefix + lines[0] + suffix;
 
       for (var user in model.users) {
         if (user.name == username) {
@@ -132,11 +133,15 @@ class ReplaceTextAction with EditorAction {
         }
       }
     } else {
-      model.file.lines[selectedRange.start.y] = Pair(prefix + lines[0], model.file.lines[selectedRange.start.y].second);
+      model.file.lines[selectedRange.start.y] = prefix + lines[0];
+
       for (int i = 1; i < lines.length - 1; i++) {
-        model.file.lines.insert(selectedRange.start.y + i - 1, Pair(lines[i], GlobalKey()));
+        model.file.lines.insert(selectedRange.start.y + i - 1, lines[i]);
+        model.lineKeys.insert(selectedRange.start.y + i - 1, GlobalKey());
       }
-      model.file.lines.insert(selectedRange.start.y + lines.length - 1, Pair(lines.last + suffix, GlobalKey()));
+
+      model.file.lines.insert(selectedRange.start.y + lines.length - 1, lines.last + suffix);
+      model.lineKeys.insert(selectedRange.start.y + lines.length - 1, GlobalKey());
 
       for (var user in model.users) {
         if (user.name == username) {
