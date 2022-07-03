@@ -13,6 +13,7 @@ class EditorModel extends ChangeNotifier {
   late List<User> users;
   late String localUserName;
   late WebSocketChannel socket;
+  late Function onUpdate;
   User get localUser => users.firstWhere((element) => element.name == localUserName);
 
   void updateLocalUser({Point<int>? newPosition, Selection? newSelection}) {
@@ -41,21 +42,11 @@ class EditorModel extends ChangeNotifier {
   }
 
   void makeNewLine(int lineIndex, String startText) {
-    file.lines.insert(lineIndex, startText);
-
-    notifyListeners();
-  }
-
-  void deleteLine(int lineIndex) {
-    file.lines.removeAt(lineIndex);
-
-    notifyListeners();
+    file.lines.insert(lineIndex, Pair(startText, GlobalKey()));
   }
 
   void deleteLines(int startLineIndex, int endLineIndex) {
     file.lines.removeRange(startLineIndex, endLineIndex);
-
-    notifyListeners();
   }
 
   void sendJSON(dynamic json) {
@@ -94,27 +85,27 @@ class EditorModel extends ChangeNotifier {
       "test",
       -1,
       [
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
+        "0very long line very long line very long line",
+        "1very long line very long line very long line",
+        "2very long line very long line very long line",
+        "3very long line very long line very long line",
+        "4very long line very long line very long line",
+        "5very long line very long line very long line",
+        "6very long line very long line very long line",
+        "7very long line very long line very long line",
+        "8very long line very long line very long line",
+        "9very long line very long line very long line",
+        "10very long line very long line very long line",
+        "11very long line very long line very long line",
+        "12very long line very long line very long line",
+        "13very long line very long line very long line",
+        "14very long line very long line very long line",
+        "15very long line very long line very long line",
+        "16very long line very long line very long line",
+        "17very long line very long line very long line",
+        "18very long line very long line very long line",
+        "19very long line very long line very long line",
+        "20very long line very long line very long line",
         "very long line very long line very long line",
         "very long line very long line very long line",
         "very long line very long line very long line",
@@ -197,5 +188,7 @@ class EditorModel extends ChangeNotifier {
         notifyListeners();
         break;
     }
+
+    onUpdate();
   }
 }

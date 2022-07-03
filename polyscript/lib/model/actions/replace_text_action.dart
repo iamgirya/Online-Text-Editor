@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:polyscript/model/action.dart';
 import 'package:polyscript/model/editor_model.dart';
 import 'package:polyscript/model/user_model.dart';
+
+import '../file_model.dart';
 
 /*
 
@@ -61,14 +64,16 @@ class ReplaceTextAction implements EditorAction {
   }
 
   void deleteSelection(EditorModel model) {
-    var prefix = model.file.lines[selectedRange.start.y].substring(0, selectedRange.start.x);
-    var suffix = model.file.lines[selectedRange.end.y].substring(selectedRange.end.x);
-
-    for (var i = selectedRange.start.y; i <= selectedRange.end.y; i++) {
-      model.file.lines.removeAt(selectedRange.start.y);
+    if (selectedRange.start == selectedRange.end) {
+      return;
     }
 
-    model.file.lines.insert(selectedRange.start.y, prefix + suffix);
+    var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
+    var suffix = model.file.lines[selectedRange.end.y].first.substring(selectedRange.end.x);
+
+    model.deleteLines(selectedRange.start.y, selectedRange.end.y+1);
+
+    model.makeNewLine(selectedRange.start.y, prefix + suffix);
 
     for (var user in model.users) {
       if (user.name == username || selectedRange.constaint(user.cursorPosition)) {
@@ -105,11 +110,11 @@ class ReplaceTextAction implements EditorAction {
   void insertText(EditorModel model) {
     var lines = insertingText.split("\n");
 
-    var prefix = model.file.lines[selectedRange.start.y].substring(0, selectedRange.start.x);
-    var suffix = model.file.lines[selectedRange.start.y].substring(selectedRange.start.x);
+    var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
+    var suffix = model.file.lines[selectedRange.start.y].first.substring(selectedRange.start.x);
 
     if (lines.length == 1) {
-      model.file.lines[selectedRange.start.y] = prefix + lines[0] + suffix;
+      model.file.lines[selectedRange.start.y] = Pair(prefix + lines[0] + suffix, model.file.lines[selectedRange.start.y].second);
 
       for (var user in model.users) {
         if (user.name == username) {
@@ -124,11 +129,11 @@ class ReplaceTextAction implements EditorAction {
         }
       }
     } else {
-      model.file.lines[selectedRange.start.y] = prefix + lines[0];
+      model.file.lines[selectedRange.start.y] = Pair(prefix + lines[0], model.file.lines[selectedRange.start.y].second);
       for (int i = 1; i < lines.length - 1; i++) {
-        model.file.lines.insert(selectedRange.start.y + i - 1, lines[i]);
+        model.makeNewLine(selectedRange.start.y + i - 1, lines[i]);
       }
-      model.file.lines.insert(selectedRange.start.y + lines.length - 1, lines.last + suffix);
+      model.makeNewLine(selectedRange.start.y + lines.length - 1, lines.last + suffix);
 
       for (var user in model.users) {
         if (user.name == username) {
