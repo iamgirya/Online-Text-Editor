@@ -8,6 +8,7 @@ import 'package:polyscript/ui/editor/line_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/actions/replace_text_action.dart';
+import '../../model/actions/update_position_action.dart';
 import 'editor_inherit.dart';
 
 class TextEditorWidget extends StatefulWidget {
@@ -39,34 +40,31 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
       if (editor.localUser.cursorPosition.x == editor.file.lines[editor.localUser.cursorPosition.y].first.length) {
         if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
-          editor.updateLocalUser(
-            newPosition: Point(
-              0,
-              editor.localUser.cursorPosition.y + 1,
-            ),
+          editor.sendJSON(
+            UpdatePositionAction(editor.localUserName, Point(0, editor.localUser.cursorPosition.y + 1,))
           );
           preffereCursorPositionX = editor.localUser.cursorPosition.x;
         }
       } else {
-        editor.updateLocalUser(
-          newPosition: Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y),
+        editor.sendJSON(
+          UpdatePositionAction(editor.localUserName, Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y))
         );
       }
       preffereCursorPositionX = editor.localUser.cursorPosition.x;
     } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       if (editor.localUser.cursorPosition.x == 0) {
         if (editor.localUser.cursorPosition.y > 0) {
-          editor.updateLocalUser(
-            newPosition: Point(
+          editor.sendJSON(
+            UpdatePositionAction(editor.localUserName, Point(
               editor.file.lines[editor.localUser.cursorPosition.y - 1].first.length,
               editor.localUser.cursorPosition.y - 1,
-            ),
+            ))
           );
           preffereCursorPositionX = editor.localUser.cursorPosition.x;
         }
       } else {
-        editor.updateLocalUser(
-          newPosition: Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y),
+        editor.sendJSON(
+          UpdatePositionAction(editor.localUserName, Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y))
         );
         preffereCursorPositionX = editor.localUser.cursorPosition.x;
       }
@@ -96,7 +94,9 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
         if (newPosition != null) {
           if (newPosition != editor.localUser.cursorPosition) {
-            editor.updateLocalUser(newPosition: newPosition);
+            editor.sendJSON(
+              UpdatePositionAction(editor.localUserName, newPosition)
+            );
             preffereCursorPositionX = newPosition.x;
           }
           // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
@@ -105,7 +105,9 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             element = editor.file.lines[editor.localUser.cursorPosition.y - 1].second.currentContext as Element;
             newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
-              editor.updateLocalUser(newPosition: newPosition);
+              editor.sendJSON(
+                UpdatePositionAction(editor.localUserName, newPosition)
+              );
               preffereCursorPositionX = newPosition.x;
             }
           }
@@ -139,7 +141,9 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
         if (newPosition != null) {
           if (newPosition != editor.localUser.cursorPosition) {
-            editor.updateLocalUser(newPosition: newPosition);
+            editor.sendJSON(
+              UpdatePositionAction(editor.localUserName, newPosition)
+            );
             preffereCursorPositionX = newPosition.x;
           }
           // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
@@ -148,7 +152,9 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             element = editor.file.lines[editor.localUser.cursorPosition.y + 1].second.currentContext as Element;
             newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
-              editor.updateLocalUser(newPosition: newPosition);
+              editor.sendJSON(
+                UpdatePositionAction(editor.localUserName, newPosition)
+              );
               preffereCursorPositionX = newPosition.x;
             }
           }
@@ -274,13 +280,19 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                       } else {
                         endOfWord += newPosition.x;
                       }
+                      editor.sendJSON(
+                        UpdatePositionAction(editor.localUserName, Point(endOfWord, newPosition.y))
+                      );
                       editor.updateLocalUser(
-                          newPosition: Point(endOfWord, newPosition.y),
-                          newSelection: Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y)));
+                        newSelection: Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y))
+                      );
                       preffereCursorPositionX = endOfWord;
                     } else {
                       // обычный клик
-                      editor.updateLocalUser(newPosition: newPosition, newSelection: null);
+                      editor.sendJSON(
+                        UpdatePositionAction(editor.localUserName, newPosition)
+                      );
+                      editor.updateLocalUser(newSelection: null);
                       preffereCursorPositionX = newPosition.x;
                     }
                     lastTapTime = DateTime.now();
@@ -303,8 +315,10 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
               onHorizontalDragUpdate: (details) {
                 var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
                 if (highlightStart != null && newPosition != null) {
-                  editor.updateLocalUser(
-                      newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
+                  editor.sendJSON(
+                    UpdatePositionAction(editor.localUserName, newPosition)
+                  );
+                  editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
                   preffereCursorPositionX = newPosition.x;
                   //скролл
                   scrollList(editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
@@ -314,8 +328,10 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
               onVerticalDragUpdate: (details) {
                 var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
                 if (highlightStart != null && newPosition != null) {
-                  editor.updateLocalUser(
-                      newPosition: newPosition, newSelection: Selection(highlightStart!, newPosition));
+                  editor.sendJSON(
+                    UpdatePositionAction(editor.localUserName, newPosition)
+                  );
+                  editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
                   preffereCursorPositionX = newPosition.x;
                   //скролл
                   scrollList(editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
@@ -342,7 +358,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                         keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
                       var action =
                           ReplaceTextAction(editor.localUserName, keyEvent.character!, editor.localUser.selection);
-                      editor.sendJSON(action.toJson());
+                      editor.sendJSON(action);
                       // стирание
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
                       if (editor.localUser.cursorPosition.x == 0 &&
@@ -357,7 +373,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                             Point(0, editor.localUser.cursorPosition.y),
                           ),
                         );
-                        editor.sendJSON(action.toJson());
+                        editor.sendJSON(action);
                       } else {
                         var action = ReplaceTextAction(
                             editor.localUserName,
@@ -367,12 +383,12 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                                     Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y),
                                     editor.localUser.cursorPosition)
                                 : editor.localUser.selection.readyToWork);
-                        editor.sendJSON(action.toJson());
+                        editor.sendJSON(action);
                       }
                       // добавление новой строки
                     } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
                       var action = ReplaceTextAction(editor.localUserName, "\n", editor.localUser.selection);
-                      editor.sendJSON(action.toJson());
+                      editor.sendJSON(action);
                       // управление стрелочками
                     } else {
                       keyboardNavigation(keyEvent);

@@ -24,7 +24,10 @@ import '../file_model.dart';
 
 */
 
-class ReplaceTextAction implements EditorAction {
+class ReplaceTextAction with EditorAction {
+  @override
+  // TODO: implement actionName
+  String get actionName => "replace_text";
   //Имя пользователя, инициировавшего действие
   @override
   late String username;
@@ -55,7 +58,7 @@ class ReplaceTextAction implements EditorAction {
   toJson() {
     return jsonEncode(
       {
-        "action": "replace_text",
+        "action": actionName,
         "username": username,
         "text": insertingText,
         "selection": [selectedRange.start.x, selectedRange.start.y, selectedRange.end.x, selectedRange.end.y],
@@ -71,9 +74,9 @@ class ReplaceTextAction implements EditorAction {
     var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
     var suffix = model.file.lines[selectedRange.end.y].first.substring(selectedRange.end.x);
 
-    model.deleteLines(selectedRange.start.y, selectedRange.end.y+1);
+    model.file.lines.removeRange(selectedRange.start.y, selectedRange.end.y+1);
 
-    model.makeNewLine(selectedRange.start.y, prefix + suffix);
+    model.file.lines.insert(selectedRange.start.y, Pair(prefix + suffix, GlobalKey()));
 
     for (var user in model.users) {
       if (user.name == username || selectedRange.constaint(user.cursorPosition)) {
@@ -131,9 +134,9 @@ class ReplaceTextAction implements EditorAction {
     } else {
       model.file.lines[selectedRange.start.y] = Pair(prefix + lines[0], model.file.lines[selectedRange.start.y].second);
       for (int i = 1; i < lines.length - 1; i++) {
-        model.makeNewLine(selectedRange.start.y + i - 1, lines[i]);
+        model.file.lines.insert(selectedRange.start.y + i - 1, Pair(lines[i], GlobalKey()));
       }
-      model.makeNewLine(selectedRange.start.y + lines.length - 1, lines.last + suffix);
+      model.file.lines.insert(selectedRange.start.y + lines.length - 1, Pair(lines.last + suffix, GlobalKey()));
 
       for (var user in model.users) {
         if (user.name == username) {

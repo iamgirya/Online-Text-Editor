@@ -110,15 +110,6 @@ wsServer.on('connection', function (ws) {
         } else if (message.action == "connection") {
             let fileCode = message.fileCode;
             let username = message.username;
-        } else if (message.action == "position_update") {
-            file.users.forEach((user) => {
-                user.socket.send(JSON.stringify({
-                        "action":"user_update_position",
-                        "username": message.username,
-                        "newPosition": message.newPosition,
-                    })
-                )
-            })
         } else if (message.action == "replace_text") {
             file.users.forEach((user) => {
                 user.socket.send(
@@ -127,6 +118,16 @@ wsServer.on('connection', function (ws) {
                         "username": message.username,
                         "selection": message.selection,
                         "text": message.text
+                    })
+                )
+            })
+        } else if (message.action == "position_update") {
+            file.users.forEach((user) => {
+                user.socket.send(
+                    JSON.stringify({
+                        "action": message.action,
+                        "username": message.username,
+                        "position": message.position
                     })
                 )
             })

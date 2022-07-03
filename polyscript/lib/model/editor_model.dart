@@ -1,11 +1,14 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:polyscript/model/actions/replace_text_action.dart';
+import 'package:polyscript/model/actions/update_position_action.dart';
 import 'package:polyscript/model/file_model.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'action.dart';
 import 'user_model.dart';
 
 class EditorModel extends ChangeNotifier {
@@ -14,43 +17,30 @@ class EditorModel extends ChangeNotifier {
   late String localUserName;
   late WebSocketChannel socket;
   late Function onUpdate;
+  Queue<EditorAction> requestQueue = Queue();
+  static const int queueMaxCount = 1;
   User get localUser => users.firstWhere((element) => element.name == localUserName);
 
   void updateLocalUser({Point<int>? newPosition, Selection? newSelection}) {
     if (newPosition != null || newSelection != null) {
-      if (newPosition != null) {
-        localUser.cursorPosition = newPosition;
-        localUser.selection = Selection(newPosition, newPosition);
-      }
 
       if (newSelection != null) {
         localUser.selection = newSelection;
       }
 
       notifyListeners();
-
-      socket.sink.add(
-        jsonEncode(
-          {
-            "action": "position_update",
-            "username": localUser.name,
-            "newPosition": [localUser.cursorPosition.x, localUser.cursorPosition.y],
-          },
-        ),
-      );
     }
   }
 
-  void makeNewLine(int lineIndex, String startText) {
-    file.lines.insert(lineIndex, Pair(startText, GlobalKey()));
-  }
+  void sendJSON(EditorAction actionToSend) {
+    String json = actionToSend.toJson();
 
-  void deleteLines(int startLineIndex, int endLineIndex) {
-    file.lines.removeRange(startLineIndex, endLineIndex);
-  }
+    if (requestQueue.length < queueMaxCount && !(requestQueue.isNotEmpty && (actionToSend is UpdatePositionAction) && requestQueue.last == actionToSend)) {
+      requestQueue.add(actionToSend);
 
-  void sendJSON(dynamic json) {
-    socket.sink.add(json);
+      socket.sink.add(json);
+    }
+    print(requestQueue.length);
   }
 
   EditorModel.createFile(this.localUserName) {
@@ -121,6 +111,7 @@ class EditorModel extends ChangeNotifier {
 
   void listenServer(message) {
     var json = jsonDecode(message);
+    EditorAction? action;
 
     switch (json["action"]) {
       case "new_user":
@@ -144,15 +135,10 @@ class EditorModel extends ChangeNotifier {
         }
         break;
 
-      case "user_update_position":
-        var username = json["username"].toString();
-        var userIndex = users.indexWhere((user) => user.name == username);
-
-        if (userIndex != -1) {
-          var point = json["newPosition"];
-          users[userIndex].cursorPosition = Point(point[0], point[1]);
-          notifyListeners();
-        }
+      case "position_update":
+        action = UpdatePositionAction.fromJson(json);
+        action.execute(this);
+        notifyListeners();
         break;
 
       case "user_exit":
@@ -183,12 +169,19 @@ class EditorModel extends ChangeNotifier {
         break;
 
       case "replace_text":
-        var action = ReplaceTextAction.fromJson(json);
+        action = ReplaceTextAction.fromJson(json);
         action.execute(this);
         notifyListeners();
         break;
     }
 
     onUpdate();
+
+    if (requestQueue.isNotEmpty && action != null
+      && (action == requestQueue.first)
+    
+    ) {
+      requestQueue.removeFirst();
+    }
   }
 }
