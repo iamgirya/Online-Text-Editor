@@ -13,7 +13,6 @@ import 'user_model.dart';
 
 class EditorModel extends ChangeNotifier {
   late FileModel file;
-  late List<GlobalKey> lineKeys;
   late List<User> users;
   late String localUserName;
   late WebSocketChannel socket;
@@ -24,6 +23,7 @@ class EditorModel extends ChangeNotifier {
 
   void updateLocalUser({Point<int>? newPosition, Selection? newSelection}) {
     if (newPosition != null || newSelection != null) {
+
       if (newSelection != null) {
         localUser.selection = newSelection;
       }
@@ -35,8 +35,7 @@ class EditorModel extends ChangeNotifier {
   void sendJSON(EditorAction actionToSend) {
     String json = actionToSend.toJson();
 
-    if (requestQueue.length < queueMaxCount &&
-        !(requestQueue.isNotEmpty && (actionToSend is UpdatePositionAction) && requestQueue.last == actionToSend)) {
+    if (requestQueue.length < queueMaxCount && !(requestQueue.isNotEmpty && (actionToSend is UpdatePositionAction) && requestQueue.last == actionToSend)) {
       requestQueue.add(actionToSend);
 
       socket.sink.add(json);
@@ -108,10 +107,6 @@ class EditorModel extends ChangeNotifier {
         "very long line very long line very long line",
       ],
     );
-    lineKeys = [];
-    for (var _ in file.lines) {
-      lineKeys.add(GlobalKey());
-    }
   }
 
   void listenServer(message) {
@@ -182,7 +177,10 @@ class EditorModel extends ChangeNotifier {
 
     onUpdate();
 
-    if (requestQueue.isNotEmpty && action != null && (action == requestQueue.first)) {
+    if (requestQueue.isNotEmpty && action != null
+      && (action == requestQueue.first)
+    
+    ) {
       requestQueue.removeFirst();
     }
   }

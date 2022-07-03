@@ -10,11 +10,11 @@ class Pair<T1, T2> {
 class FileModel {
   String name;
   int fileCode;
-  late List<String> lines;
+  late List<Pair<String, GlobalKey>> lines;
   FileModel(this.name, this.fileCode, List<String> l) {
     lines = [];
     for (var x in l) {
-      lines.add(x);
+      lines.add(Pair(x, GlobalKey()));
     }
   }
 }
