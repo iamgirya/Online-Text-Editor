@@ -26,15 +26,12 @@ import '../file_model.dart';
 
 class ReplaceTextAction with EditorAction {
   @override
-  // TODO: implement actionName
   String get actionName => "replace_text";
   //Имя пользователя, инициировавшего действие
   @override
   late String username;
   //Текст, на который будет заменена выделенная область
   late String insertingText;
-  //Область, которая была выделена пользователем в момент выполнения действия
-  late Selection selectedRange;
 
   //TODO: - реализовать смещение выделений у пользователей
   @override
@@ -43,15 +40,11 @@ class ReplaceTextAction with EditorAction {
     insertText(model);
   }
 
-  ReplaceTextAction(this.username, this.insertingText, this.selectedRange);
+  ReplaceTextAction(this.username, this.insertingText);
 
   ReplaceTextAction.fromJson(dynamic json) {
-    var selectionPoints = json["selection"];
-
     username = json["username"];
     insertingText = json["text"];
-    selectedRange =
-        Selection(Point(selectionPoints[0], selectionPoints[1]), Point(selectionPoints[2], selectionPoints[3]));
   }
 
   @override
@@ -61,12 +54,13 @@ class ReplaceTextAction with EditorAction {
         "action": actionName,
         "username": username,
         "text": insertingText,
-        "selection": [selectedRange.start.x, selectedRange.start.y, selectedRange.end.x, selectedRange.end.y],
       },
     );
   }
 
   void deleteSelection(EditorModel model) {
+    var selectedRange = model.users.firstWhere((user) => user.name == username).selection;
+
     if (selectedRange.start == selectedRange.end) {
       return;
     }
@@ -74,7 +68,7 @@ class ReplaceTextAction with EditorAction {
     var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
     var suffix = model.file.lines[selectedRange.end.y].first.substring(selectedRange.end.x);
 
-    model.file.lines.removeRange(selectedRange.start.y, selectedRange.end.y+1);
+    model.file.lines.removeRange(selectedRange.start.y, selectedRange.end.y + 1);
 
     model.file.lines.insert(selectedRange.start.y, Pair(prefix + suffix, GlobalKey()));
 
@@ -111,13 +105,16 @@ class ReplaceTextAction with EditorAction {
   }
 
   void insertText(EditorModel model) {
+    var selectedRange = model.users.firstWhere((user) => user.name == username).selection;
+
     var lines = insertingText.split("\n");
 
     var prefix = model.file.lines[selectedRange.start.y].first.substring(0, selectedRange.start.x);
     var suffix = model.file.lines[selectedRange.start.y].first.substring(selectedRange.start.x);
 
     if (lines.length == 1) {
-      model.file.lines[selectedRange.start.y] = Pair(prefix + lines[0] + suffix, model.file.lines[selectedRange.start.y].second);
+      model.file.lines[selectedRange.start.y] =
+          Pair(prefix + lines[0] + suffix, model.file.lines[selectedRange.start.y].second);
 
       for (var user in model.users) {
         if (user.name == username) {

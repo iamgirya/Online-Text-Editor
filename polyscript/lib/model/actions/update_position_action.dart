@@ -27,7 +27,7 @@ import '../file_model.dart';
 class UpdatePositionAction with EditorAction {
   @override
   // TODO: implement actionName
-  String get actionName => "position_update";
+  String get actionName => "update_position";
   //Имя пользователя, инициировавшего действие
   @override
   late String username;
@@ -57,7 +57,7 @@ class UpdatePositionAction with EditorAction {
       {
         "action": actionName,
         "username": username,
-        "position": [position.x ,position.y],
+        "position": [position.x, position.y],
       },
     );
   }
