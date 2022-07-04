@@ -85,10 +85,10 @@ class ReplaceTextAction with EditorAction {
           selectedRange.start.y,
         );
         if (user.name == username) {
-          user.selection = Selection(user.cursorPosition, user.cursorPosition);
+          //user.selection = Selection(user.cursorPosition, user.cursorPosition);
         } else {
           //TODO: - сделать нормальное обновление выделения
-          user.selection = Selection(user.cursorPosition, user.cursorPosition);
+          //user.selection = Selection(user.cursorPosition, user.cursorPosition);
         }
       } else {
         if (user.cursorPosition.y == selectedRange.end.y && user.cursorPosition.x >= selectedRange.end.x) {
@@ -97,14 +97,14 @@ class ReplaceTextAction with EditorAction {
             selectedRange.start.y,
           );
           //TODO: - сделать нормальное обновление выделения
-          user.selection = Selection(user.cursorPosition, user.cursorPosition);
+          //user.selection = Selection(user.cursorPosition, user.cursorPosition);
         } else if (user.cursorPosition.y > selectedRange.end.y) {
           user.cursorPosition = Point(
             user.cursorPosition.x,
             user.cursorPosition.y - (selectedRange.end.y - selectedRange.start.y),
           );
           //TODO: - сделать нормальное обновление выделения
-          user.selection = Selection(user.cursorPosition, user.cursorPosition);
+          //user.selection = Selection(user.cursorPosition, user.cursorPosition);
         }
       }
     }
@@ -122,12 +122,12 @@ class ReplaceTextAction with EditorAction {
       for (var user in model.users) {
         if (user.name == username) {
           user.cursorPosition = Point(selectedRange.start.x + insertingText.length, selectedRange.start.y);
-          user.selection = Selection(user.cursorPosition, user.cursorPosition);
+          //user.selection = Selection(user.cursorPosition, user.cursorPosition);
         } else {
           if (user.cursorPosition.y == selectedRange.start.y && user.cursorPosition.x > selectedRange.start.x) {
             user.cursorPosition = Point(user.cursorPosition.x + insertingText.length, user.cursorPosition.y);
             //TODO: - сделать нормальное обновление выделения
-            user.selection = Selection(user.cursorPosition, user.cursorPosition);
+            //user.selection = Selection(user.cursorPosition, user.cursorPosition);
           }
         }
       }
@@ -141,17 +141,17 @@ class ReplaceTextAction with EditorAction {
       for (var user in model.users) {
         if (user.name == username) {
           user.cursorPosition = Point(lines.last.length, selectedRange.start.y + lines.length - 1);
-          user.selection = Selection(user.cursorPosition, user.cursorPosition);
+          //user.selection = Selection(user.cursorPosition, user.cursorPosition);
         } else {
           if (user.cursorPosition.y == selectedRange.start.y && user.cursorPosition.x > selectedRange.start.x) {
             user.cursorPosition = Point(lines.last.length + user.cursorPosition.x - selectedRange.end.x,
                 user.cursorPosition.y + lines.length - 1);
             //TODO: - сделать нормальное обновление выделения
-            user.selection = Selection(user.cursorPosition, user.cursorPosition);
+            //user.selection = Selection(user.cursorPosition, user.cursorPosition);
           } else if (user.cursorPosition.y > selectedRange.start.y) {
             user.cursorPosition = Point(user.cursorPosition.x, user.cursorPosition.y + lines.length - 1);
             //TODO: - сделать нормальное обновление выделения
-            user.selection = Selection(user.cursorPosition, user.cursorPosition);
+            //user.selection = Selection(user.cursorPosition, user.cursorPosition);
           }
         }
       }

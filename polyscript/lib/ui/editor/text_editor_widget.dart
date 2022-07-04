@@ -11,6 +11,8 @@ import '../../model/actions/replace_text_action.dart';
 import '../../model/actions/update_position_action.dart';
 import 'editor_inherit.dart';
 
+import 'package:flutter/services.dart';
+
 class TextEditorWidget extends StatefulWidget {
   const TextEditorWidget({Key? key}) : super(key: key);
 
@@ -28,6 +30,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
   late DateTime lastTapTime;
 
   Point<int>? highlightStart;
+  bool isCtrlPressed = false;
 
   @override
   void initState() {
@@ -344,6 +347,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
               // конец выделения
               onVerticalDragEnd: (details) {
                 highlightStart = null;
+                
               },
               child: KeyboardListener(
                 autofocus: true,
@@ -351,11 +355,27 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                 onKeyEvent: (keyEvent) {
                   String newLine = "";
                   String secondLine = "";
+                  
                   if (keyEvent is! KeyUpEvent) {
-                    // ввод символа
-                    if (keyEvent.character != null &&
+                    
+                    // ctrl+V
+                    if (keyEvent.logicalKey == LogicalKeyboardKey.keyV &&
+                        isCtrlPressed) {
+                        Clipboard.getData(Clipboard.kTextPlain).then((value) => 
+                          editor.sendJSON(ReplaceTextAction(editor.localUserName, value!.text!, editor.localUser.selection))
+                        ).onError((error, stackTrace) => print("Error in Crtl+V"));
+                      // ctrl+C
+                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.keyC &&
+                        isCtrlPressed) {
+                        String selectedText = editor.getSelectedText();
+                        if (selectedText != "") {
+                          Clipboard.setData(ClipboardData(text: selectedText));
+                        }
+                      // ввод символа
+                    } else if (keyEvent.character != null &&
                         keyEvent.logicalKey != LogicalKeyboardKey.enter &&
-                        keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
+                        keyEvent.logicalKey != LogicalKeyboardKey.backspace &&
+                        keyEvent.logicalKey != LogicalKeyboardKey.control) {
                       var action =
                           ReplaceTextAction(editor.localUserName, keyEvent.character!, editor.localUser.selection);
                       editor.sendJSON(action);
@@ -390,8 +410,14 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                       var action = ReplaceTextAction(editor.localUserName, "\n", editor.localUser.selection);
                       editor.sendJSON(action);
                       // управление стрелочками
+                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft || keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
+                      isCtrlPressed = true;
                     } else {
                       keyboardNavigation(keyEvent);
+                    }
+                  } else {
+                    if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft || keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
+                      isCtrlPressed = false;
                     }
                   }
                 },
