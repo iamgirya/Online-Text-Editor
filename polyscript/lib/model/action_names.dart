@@ -7,6 +7,9 @@ const connectToFile = "connect_to_file";
 //изменение содержимого файла
 const replaceText = "replace_text";
 
+//удаление предыдущего символа
+const clearText = "clear_text";
+
 //изменение позиции курсора пользователя
 const updatePosition = "update_position";
 

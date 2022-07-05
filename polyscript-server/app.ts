@@ -1,6 +1,7 @@
 // Подключаем библиотеку для работы с WebSocket
 
 import { WebSocket } from "ws"
+import { ClearTextAction } from "./clear_text_action";
 import { EditorModel } from "./editor_model";
 import { FileModel } from "./file_model";
 import { ReplaceTextAction } from "./replace_text_action";
@@ -109,6 +110,26 @@ wsServer.on('connection', function (ws) {
                         "action": message.action,
                         "username": message.username,
                         "text": message.text
+                    }))
+                }
+                
+                break;
+
+            case "clear_text":
+                var actionUser = users.find((user) => user.username == message.username)!
+                var actionEditor = editors.find((editor) => editor.file.code == actionUser.fileCode)!
+                var clearAction = ClearTextAction.fromJson(message)
+                
+                console.log(clearAction)
+                console.log(actionEditor.file.lines)
+
+                clearAction.execute(actionEditor)
+
+                for(var i = 0; i < actionEditor.users.length; i++) {
+                    var user = actionEditor.users[i];
+                    user.socket.send(JSON.stringify({
+                        "action": message.action,
+                        "username": message.username
                     }))
                 }
                 

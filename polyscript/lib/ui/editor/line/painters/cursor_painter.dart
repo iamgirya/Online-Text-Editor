@@ -30,8 +30,12 @@ class CursorPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var user in users) {
-      initParamsForUser(user);
-      drawCursor(canvas, size, user);
+      if (user.isLocal) {
+        drawLocalUserCursor(canvas, user);
+      } else {
+        initParamsForUser(user);
+        drawCursor(canvas, size, user);
+      }
     }
   }
 
@@ -90,11 +94,11 @@ class CursorPainter extends CustomPainter {
   }
 
   //TODO: использовать для отображения курсора локального пользователя
-  void drawLocalUserCursor(Canvas canvas) {
+  void drawLocalUserCursor(Canvas canvas, User user) {
     if (animationValue != null) {
       final cursorPaint = Paint()..color = Colors.black.withOpacity(animationValue!);
       var cursorOffset = lineTextPainter.getOffsetForCaret(
-        TextPosition(offset: userCursorPosition.dx.toInt()),
+        TextPosition(offset: user.cursorPosition.x),
         Rect.zero,
       );
       canvas.drawRRect(

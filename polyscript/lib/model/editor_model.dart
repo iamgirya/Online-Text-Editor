@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:polyscript/model/action_names.dart';
+import 'package:polyscript/model/actions/clear_text_action.dart';
 import 'package:polyscript/model/actions/replace_text_action.dart';
 import 'package:polyscript/model/actions/update_position_action.dart';
 import 'package:polyscript/model/file_model.dart';
@@ -18,13 +19,13 @@ final connectionAddress = Uri.parse("ws://127.0.0.1:8081");
 class EditorModel extends ChangeNotifier {
   late FileModel file;
   late List<User> users;
-  late String localUserName;
   late WebSocketChannel socket;
   Function? onUpdate;
   late Function(String?) onConnect;
   Queue<EditorAction> requestQueue = Queue();
   static const int queueMaxCount = 1;
-  User get localUser => users.firstWhere((element) => element.name == localUserName);
+
+  User get localUser => users.firstWhere((element) => element.isLocal);
 
   void updateLocalUser({Point<int>? newPosition, Selection? newSelection}) {
     if (newPosition != null || newSelection != null) {
@@ -62,13 +63,14 @@ class EditorModel extends ChangeNotifier {
     //print(requestQueue.length);
   }
 
-  EditorModel.createFile(this.localUserName, this.onConnect) {
+  EditorModel.createFile(localUserName, this.onConnect) {
     users = [
       User(
         const Point(0, 0),
         localUserName,
         randomCursorColor(),
         Selection(const Point(0, 0), const Point(0, 0)),
+        isLocal: true,
       ),
     ];
 
@@ -88,13 +90,14 @@ class EditorModel extends ChangeNotifier {
     );
   }
 
-  EditorModel.connectFile(this.localUserName, int fileCode, this.onConnect) {
+  EditorModel.connectFile(localUserName, int fileCode, this.onConnect) {
     users = [
       User(
         const Point(0, 0),
         localUserName,
         randomCursorColor(),
         Selection(const Point(0, 0), const Point(0, 0)),
+        isLocal: true,
       ),
     ];
 
@@ -182,6 +185,12 @@ class EditorModel extends ChangeNotifier {
 
       case updatePosition:
         action = UpdatePositionAction.fromJson(json);
+        action.execute(this);
+        notifyListeners();
+        break;
+
+      case clearText:
+        action = ClearTextAction.fromJson(json);
         action.execute(this);
         notifyListeners();
         break;

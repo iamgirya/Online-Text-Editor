@@ -5,4 +5,8 @@ export class Point {
         this.x = x
         this.y = y
     }
+
+    add(p: Point) {
+        return new Point(this.x + p.x, this.y + p.y)
+    }
 }

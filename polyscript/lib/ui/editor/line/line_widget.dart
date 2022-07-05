@@ -45,6 +45,10 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   late AnimationController controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
   late List<User> usersOnLine;
 
+  bool get isExistUnlocalUsersOnLine {
+    return usersOnLine.length > 1 || (usersOnLine.length == 1 && !usersOnLine[0].isLocal);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -71,10 +75,10 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     localUserLineIndex = editor.localUser.cursorPosition.y;
 
-    usersOnLine = editor.users.where((element) => element.cursorPosition.y == widget.index).toList();
+    usersOnLine = editor.users.where((user) => user.cursorPosition.y == widget.index).toList();
 
-    lineHeight = max(20 + (usersOnLine.isEmpty ? 0 : 20),
-        textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20));
+    lineHeight = max(20 + (isExistUnlocalUsersOnLine ? 20 : 0),
+        textPainter.computeLineMetrics().length * 20 + (isExistUnlocalUsersOnLine ? 20 : 0));
 
     Color containerColor;
 
@@ -103,7 +107,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
             painter: LinePainter(
               indexPainter,
               textPainter,
-              usersOnLine.isEmpty ? 0 : 20,
+              isExistUnlocalUsersOnLine ? 20 : 0,
             ),
           ),
           CustomPaint(
@@ -111,7 +115,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
             painter: CursorPainter(
               textPainter,
               usersOnLine,
-              usersOnLine.isEmpty ? 0 : 20,
+              isExistUnlocalUsersOnLine ? 20 : 0,
               animationValue: controller.value,
             ),
           )
@@ -147,7 +151,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
   }
 
   int getCursorOffset(Offset position) {
-    var yOffset = usersOnLine.isEmpty ? 0 : 20;
+    var yOffset = isExistUnlocalUsersOnLine ? 20 : 0;
     return textPainter.getPositionForOffset(Offset(position.dx, position.dy - yOffset)).offset;
   }
 

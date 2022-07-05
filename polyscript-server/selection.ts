@@ -14,7 +14,9 @@ export class Selection {
       }
     }
   
-    get isEmpty () { return this.start == this.end }
+    get isEmpty () { 
+      return this.start.x == this.end.x && this.start.y == this.end.y
+    }
 
     constaint(p: Point) {
       return (p.y > this.start.y && p.y < this.end.y) ||

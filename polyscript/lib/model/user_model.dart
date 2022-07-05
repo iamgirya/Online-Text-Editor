@@ -6,7 +6,8 @@ class User {
   Color color;
   Point<int> cursorPosition;
   Selection selection;
-  User(this.cursorPosition, this.name, this.color, this.selection);
+  bool isLocal;
+  User(this.cursorPosition, this.name, this.color, this.selection, {this.isLocal = false});
 }
 
 class Selection {
