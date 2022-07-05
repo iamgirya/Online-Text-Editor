@@ -12,7 +12,7 @@ import 'painters/selection_painter.dart';
 class LineWidget extends StatefulWidget {
   static const double baseHeight = 20;
   static const double lineIndexingWidth = 48;
-  static const double spaceBetweenIndexAndText = 8;
+  static const double spaceBetweenIndexAndText = 16;
 
   static double get leftTextOffset {
     return LineWidget.lineIndexingWidth + LineWidget.spaceBetweenIndexAndText;

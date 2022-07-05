@@ -34,7 +34,7 @@ wsServer.on('connection', function (ws) {
 
         switch (message.action) {
             case "create_file":
-                var file = new FileModel("file name", generateFileCode(), [""]);
+                var file = new FileModel(message.file_name, generateFileCode(), [""]);
                 var user = new User(message.username, ws, file.code);
                 var editor = new EditorModel(file);
                 editor.users.push(user);
@@ -45,6 +45,7 @@ wsServer.on('connection', function (ws) {
                 user.socket.send(
                     JSON.stringify({
                         "action": "create_file",
+                        "file_name": file.name,
                         "file_code": file.code,
                     })
                 )
@@ -62,6 +63,8 @@ wsServer.on('connection', function (ws) {
                                 "action": "update_file_state",
                                 "users": connectionEditor.users.map((user) => user.toJson()),
                                 "file": connectionEditor.file.lines,
+                                "file_code": connectionEditor.file.code,
+                                "file_name": connectionEditor.file.name,
                             })
                         )
                         

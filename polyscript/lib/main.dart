@@ -33,6 +33,7 @@ class MainWidget extends StatefulWidget {
 class _MainWidgetState extends State<MainWidget> {
   final fieldController = TextEditingController(text: "user_228");
   final fileCodeController = TextEditingController(text: "");
+  final fileNameController = TextEditingController(text: "Новый файл");
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +114,44 @@ class _MainWidgetState extends State<MainWidget> {
   Widget get newFileButton {
     return ElevatedButton(
       onPressed: () {
-        late EditorModel editorModel;
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text("Имя файла", style: textStyle),
+              content: Container(
+                height: 36,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(color: highlight, borderRadius: BorderRadius.all(Radius.circular(12))),
+                child: TextField(
+                  controller: fileNameController,
+                  decoration: null,
+                  textAlign: TextAlign.center,
+                  style: textStyle,
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: plainButton,
+                  onPressed: () {
+                    late EditorModel model;
 
-        editorModel = EditorModel.createFile(
-          fieldController.text,
-          (error) => error == null ? openEditor(editorModel) : presentDialog("Ошибка", error),
+                    model = EditorModel.createFile(
+                      fieldController.text,
+                      fileNameController.text,
+                      (error) => error == null
+                          ? {
+                              Navigator.pop(context),
+                              openEditor(model),
+                            }
+                          : presentDialog("Ошибка", error),
+                    );
+                  },
+                  child: const Text("Создать"),
+                ),
+              ],
+            );
+          },
         );
       },
       child: const Text(
@@ -132,39 +166,43 @@ class _MainWidgetState extends State<MainWidget> {
     return ElevatedButton(
       onPressed: () {
         showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: const Text("Код файла", style: textStyle),
-                content: Container(
-                  height: 36,
-                  alignment: Alignment.center,
-                  decoration:
-                      const BoxDecoration(color: highlight, borderRadius: BorderRadius.all(Radius.circular(12))),
-                  child: TextField(
-                    controller: fileCodeController,
-                    decoration: null,
-                    textAlign: TextAlign.center,
-                    style: textStyle,
-                  ),
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text("Код файла", style: textStyle),
+              content: Container(
+                height: 36,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(color: highlight, borderRadius: BorderRadius.all(Radius.circular(12))),
+                child: TextField(
+                  controller: fileCodeController,
+                  decoration: null,
+                  textAlign: TextAlign.center,
+                  style: textStyle,
                 ),
-                actions: [
-                  ElevatedButton(
-                    style: plainButton,
-                    onPressed: () {
-                      late EditorModel model;
-                      model = EditorModel.connectFile(
-                        fieldController.text,
-                        int.parse(fileCodeController.text),
-                        (msg) =>
-                            msg == null ? {Navigator.pop(context), openEditor(model)} : presentDialog("Ошибка", msg),
-                      );
-                    },
-                    child: const Text("Присоединиться"),
-                  ),
-                ],
-              );
-            });
+              ),
+              actions: [
+                ElevatedButton(
+                  style: plainButton,
+                  onPressed: () {
+                    late EditorModel model;
+                    model = EditorModel.connectFile(
+                      fieldController.text,
+                      int.parse(fileCodeController.text),
+                      (msg) => msg == null
+                          ? {
+                              Navigator.pop(context),
+                              openEditor(model),
+                            }
+                          : presentDialog("Ошибка", msg),
+                    );
+                  },
+                  child: const Text("Присоединиться"),
+                ),
+              ],
+            );
+          },
+        );
       },
       child: const Text(
         "Присоединиться",

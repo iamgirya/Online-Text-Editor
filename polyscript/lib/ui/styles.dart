@@ -39,3 +39,15 @@ var plainButton = ButtonStyle(
     const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
   ),
 );
+
+var sizedPlainButton = ButtonStyle(
+  backgroundColor: MaterialStateProperty.all(Colors.red),
+  foregroundColor: MaterialStateProperty.all(text),
+  elevation: MaterialStateProperty.all(0),
+  shape: MaterialStateProperty.all(
+    const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+  ),
+  maximumSize: MaterialStateProperty.all(const Size(28, 28)),
+  minimumSize: MaterialStateProperty.all(const Size(28, 28)),
+  fixedSize: MaterialStateProperty.all(const Size(28, 28)),
+);

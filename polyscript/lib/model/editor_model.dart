@@ -13,6 +13,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'action.dart';
 import 'user_model.dart';
+import 'package:web_socket_channel/status.dart' as status;
 
 final connectionAddress = Uri.parse("ws://127.0.0.1:8081");
 
@@ -63,7 +64,7 @@ class EditorModel extends ChangeNotifier {
     //print(requestQueue.length);
   }
 
-  EditorModel.createFile(localUserName, this.onConnect) {
+  EditorModel.createFile(localUserName, fileName, this.onConnect) {
     users = [
       User(
         const Point(0, 0),
@@ -85,6 +86,7 @@ class EditorModel extends ChangeNotifier {
         {
           "action": createFile,
           "username": localUserName,
+          "file_name": fileName,
         },
       ),
     );
@@ -118,6 +120,10 @@ class EditorModel extends ChangeNotifier {
     );
   }
 
+  void close() {
+    socket.sink.close(status.goingAway);
+  }
+
   void onServerError(stack) {
     onConnect("Не удалось подключиться к серверу");
   }
@@ -129,6 +135,7 @@ class EditorModel extends ChangeNotifier {
     switch (json["action"]) {
       case createFile:
         file.fileCode = json["file_code"];
+        file.name = json["file_name"];
         onConnect(null);
         break;
       case updateFileState:
@@ -152,6 +159,8 @@ class EditorModel extends ChangeNotifier {
         for (String line in fileLines) {
           file.lines.add(Pair(line, GlobalKey()));
         }
+        file.fileCode = json["file_code"];
+        file.name = json["file_name"];
         onConnect(null);
         break;
 
