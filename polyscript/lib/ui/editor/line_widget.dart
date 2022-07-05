@@ -143,7 +143,6 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     lineHeight = max(20 + (usersOnLine.isEmpty ? 0 : 20),
         textPainter.computeLineMetrics().length * 20 + (usersOnLine.isEmpty ? 0 : 20));
-    //print(lineHeight);
 
     Color containerColor;
 
@@ -155,7 +154,7 @@ class LineWidgetState extends State<LineWidget> with TickerProviderStateMixin {
 
     Point<int>? background;
     if (!editor.localUser.selection.isEmpty) {
-      Selection selection = editor.localUser.selection.readyToWork;
+      Selection selection = editor.localUser.selection;
       if (selection.start.y <= widget.index && selection.end.y > widget.index) {
         if (selection.start.y == widget.index) {
           background = Point(selection.start.x, -1);

@@ -53,7 +53,6 @@ wsServer.on('connection', function (ws) {
 
             case "connect_to_file":
                 var connectionEditor = editors.find((editor) => editor.file.code == message.file_code)
-                console.log(editors);
                 if(connectionEditor != undefined) {
                     if(connectionEditor.users.find((user) => user.username == message.username) == undefined) {
                         var newUser = new User(message.username, ws, message.file_code);
@@ -98,6 +97,9 @@ wsServer.on('connection', function (ws) {
                 var actionUser = users.find((user) => user.username == message.username)!
                 var actionEditor = editors.find((editor) => editor.file.code == actionUser.fileCode)!
                 var action = ReplaceTextAction.fromJson(message)
+                
+                console.log(action)
+                console.log(actionEditor.file.lines);
 
                 action.execute(actionEditor)
 

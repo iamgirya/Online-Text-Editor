@@ -12,6 +12,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'action.dart';
 import 'user_model.dart';
 
+final connectionAddress = Uri.parse("ws://127.0.0.1:8081");
+
 class EditorModel extends ChangeNotifier {
   late FileModel file;
   late List<User> users;
@@ -39,7 +41,6 @@ class EditorModel extends ChangeNotifier {
     // if (requestQueue.length < queueMaxCount &&
     //     !(requestQueue.isNotEmpty && (actionToSend is UpdatePositionAction) && requestQueue.last == actionToSend)) {
     requestQueue.add(actionToSend);
-
     socket.sink.add(json);
     //}
     //print(requestQueue.length);
@@ -54,9 +55,13 @@ class EditorModel extends ChangeNotifier {
         Selection(const Point(0, 0), const Point(0, 0)),
       ),
     ];
+
     file = FileModel("file_name", -1, [""]);
 
-    socket = WebSocketChannel.connect(Uri.parse("ws://127.0.0.1:8081"));
+    socket = WebSocketChannel.connect(connectionAddress);
+
+    socket.stream.listen(listenServer, onError: onServerError);
+
     socket.sink.add(
       jsonEncode(
         {
@@ -65,7 +70,6 @@ class EditorModel extends ChangeNotifier {
         },
       ),
     );
-    socket.stream.listen(listenServer, onError: onServerError);
   }
 
   EditorModel.connectFile(this.localUserName, int fileCode, this.onConnect) {
@@ -77,9 +81,13 @@ class EditorModel extends ChangeNotifier {
         Selection(const Point(0, 0), const Point(0, 0)),
       ),
     ];
+
     file = FileModel("file_name", -1, []);
-    socket = WebSocketChannel.connect(Uri.parse("ws://127.0.0.1:8081"));
+
+    socket = WebSocketChannel.connect(connectionAddress);
+
     socket.stream.listen(listenServer, onError: onServerError);
+
     socket.sink.add(
       jsonEncode(
         {
@@ -96,10 +104,9 @@ class EditorModel extends ChangeNotifier {
   }
 
   void listenServer(message) {
-    print("hello");
-
-    var json = jsonDecode(message);
     EditorAction? action;
+    var json = jsonDecode(message);
+
     switch (json["action"]) {
       case createFile:
         file.fileCode = json["file_code"];

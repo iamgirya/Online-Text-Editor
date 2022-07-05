@@ -33,12 +33,13 @@ var indexStyle = TextStyle(
 );
 
 var buttonStyle = ButtonStyle(
-    backgroundColor: MaterialStateProperty.all(highlight),
-    elevation: MaterialStateProperty.all(0),
-    shape: MaterialStateProperty.all(
-      const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-    ),
-    fixedSize: MaterialStateProperty.all(const Size(256, 42)));
+  backgroundColor: MaterialStateProperty.all(highlight),
+  elevation: MaterialStateProperty.all(0),
+  shape: MaterialStateProperty.all(
+    const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+  ),
+  fixedSize: MaterialStateProperty.all(const Size(256, 42)),
+);
 
 var plainButton = ButtonStyle(
   backgroundColor: MaterialStateProperty.all(Colors.transparent),

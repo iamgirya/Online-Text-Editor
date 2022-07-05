@@ -40,17 +40,16 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
       if (editor.localUser.cursorPosition.x == editor.file.lines[editor.localUser.cursorPosition.y].first.length) {
         if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
-          editor.sendJSON(UpdatePositionAction(
-              editor.localUserName,
-              Point(
-                0,
-                editor.localUser.cursorPosition.y + 1,
-              )));
+          editor.sendJSON(
+            UpdatePositionAction(editor.localUserName, Point(0, editor.localUser.cursorPosition.y + 1)),
+          );
           preffereCursorPositionX = editor.localUser.cursorPosition.x;
         }
       } else {
-        editor.sendJSON(UpdatePositionAction(
-            editor.localUserName, Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y)));
+        editor.sendJSON(
+          UpdatePositionAction(
+              editor.localUserName, Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y)),
+        );
       }
       preffereCursorPositionX = editor.localUser.cursorPosition.x;
     } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
@@ -228,13 +227,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         result == null &&
         (element.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
       var transform = element.renderObject!.getTransformTo(null).getTranslation();
-      var frame = Rect.fromLTWH(
-        transform.x,
-        transform.y,
-        element.renderObject!.paintBounds.width,
-        element.renderObject!.paintBounds.height,
-      );
-
       var state = (element as StatefulElement).state as LineWidgetState;
       var lineOffset =
           state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
@@ -342,42 +334,19 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   autofocus: true,
                   focusNode: textEditorFocus,
                   onKeyEvent: (keyEvent) {
-                    String newLine = "";
-                    String secondLine = "";
                     if (keyEvent is! KeyUpEvent) {
                       // ввод символа
                       if (keyEvent.character != null &&
                           keyEvent.logicalKey != LogicalKeyboardKey.enter &&
                           keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
-                        var action = ReplaceTextAction(
-                          editor.localUserName,
-                          keyEvent.character!,
-                        );
-                        editor.sendJSON(action);
+                        editor.sendJSON(ReplaceTextAction(editor.localUserName, [keyEvent.character!]));
                         // стирание
                       } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
-                        if (editor.localUser.cursorPosition.x == 0 &&
-                            editor.localUser.selection.isEmpty &&
-                            editor.localUser.cursorPosition.y != 0) {
-                          var action = ReplaceTextAction(
-                            editor.localUserName,
-                            "",
-                          );
-                          editor.sendJSON(action);
-                        } else {
-                          var action = ReplaceTextAction(
-                            editor.localUserName,
-                            "",
-                          );
-                          editor.sendJSON(action);
-                        }
+                        //TODO: реализовать стирание (желательно через тот же класс replace_text_action)
+
                         // добавление новой строки
                       } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
-                        var action = ReplaceTextAction(
-                          editor.localUserName,
-                          "\n",
-                        );
-                        editor.sendJSON(action);
+                        editor.sendJSON(ReplaceTextAction(editor.localUserName, ["\n"]));
                         // управление стрелочками
                       } else {
                         keyboardNavigation(keyEvent);
