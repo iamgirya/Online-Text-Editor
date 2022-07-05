@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:polyscript/model/action_names.dart';
 import 'package:polyscript/model/actions/replace_text_action.dart';
 import 'package:polyscript/model/actions/update_position_action.dart';
 import 'package:polyscript/model/file_model.dart';
@@ -11,19 +12,21 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'action.dart';
 import 'user_model.dart';
 
+final connectionAddress = Uri.parse("ws://127.0.0.1:8081");
+
 class EditorModel extends ChangeNotifier {
   late FileModel file;
   late List<User> users;
   late String localUserName;
   late WebSocketChannel socket;
-  late Function onUpdate;
+  Function? onUpdate;
+  late Function(String?) onConnect;
   Queue<EditorAction> requestQueue = Queue();
   static const int queueMaxCount = 1;
   User get localUser => users.firstWhere((element) => element.name == localUserName);
 
   void updateLocalUser({Point<int>? newPosition, Selection? newSelection}) {
     if (newPosition != null || newSelection != null) {
-
       if (newSelection != null) {
         localUser.selection = newSelection;
       }
@@ -50,125 +53,87 @@ class EditorModel extends ChangeNotifier {
   void sendJSON(EditorAction actionToSend) {
     String json = actionToSend.toJson();
 
-    if (requestQueue.length < queueMaxCount && !(requestQueue.isNotEmpty && (actionToSend is UpdatePositionAction) && requestQueue.last == actionToSend)) {
-      requestQueue.add(actionToSend);
-
-      socket.sink.add(json);
-    }
-    print(requestQueue.length);
+    // if (requestQueue.length < queueMaxCount &&
+    //     !(requestQueue.isNotEmpty && (actionToSend is UpdatePositionAction) && requestQueue.last == actionToSend)) {
+    requestQueue.add(actionToSend);
+    socket.sink.add(json);
+    //}
+    //print(requestQueue.length);
   }
 
-  EditorModel.createFile(this.localUserName) {
-    print("new connection!");
+  EditorModel.createFile(this.localUserName, this.onConnect) {
     users = [
       User(
         const Point(0, 0),
         localUserName,
         Colors.indigo,
-        Selection(
-          const Point(0, 0),
-          const Point(0, 0),
-        ),
-      )
+        Selection(const Point(0, 0), const Point(0, 0)),
+      ),
     ];
 
-    //socket = WebSocketChannel.connect(Uri.parse("ws://178.20.41.205:8081"));
-    socket = WebSocketChannel.connect(Uri.parse("ws://127.0.0.1:8081"));
+    file = FileModel("file_name", -1, [""]);
 
-    socket.stream.listen(listenServer);
+    socket = WebSocketChannel.connect(connectionAddress);
+
+    socket.stream.listen(listenServer, onError: onServerError);
 
     socket.sink.add(
       jsonEncode(
         {
-          "action": "login",
-          "username": localUser.name,
+          "action": createFile,
+          "username": localUserName,
         },
       ),
     );
+  }
 
-    file = FileModel(
-      "test",
-      -1,
-      [
-        "0very long line very long line very long line",
-        "1very long line very long line very long line",
-        "2very long line very long line very long line",
-        "3very long line very long line very long line",
-        "4very long line very long line very long line",
-        "5very long line very long line very long line",
-        "6very long line very long line very long line",
-        "7very long line very long line very long line",
-        "8very long line very long line very long line",
-        "9very long line very long line very long line",
-        "10very long line very long line very long line",
-        "11very long line very long line very long line",
-        "12very long line very long line very long line",
-        "13very long line very long line very long line",
-        "14very long line very long line very long line",
-        "15very long line very long line very long line",
-        "16very long line very long line very long line",
-        "17very long line very long line very long line",
-        "18very long line very long line very long line",
-        "19very long line very long line very long line",
-        "20very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-        "very long line very long line very long line",
-      ],
+  EditorModel.connectFile(this.localUserName, int fileCode, this.onConnect) {
+    users = [
+      User(
+        const Point(0, 0),
+        localUserName,
+        Colors.indigo,
+        Selection(const Point(0, 0), const Point(0, 0)),
+      ),
+    ];
+
+    file = FileModel("file_name", -1, []);
+
+    socket = WebSocketChannel.connect(connectionAddress);
+
+    socket.stream.listen(listenServer, onError: onServerError);
+
+    socket.sink.add(
+      jsonEncode(
+        {
+          "action": connectToFile,
+          "username": localUserName,
+          "file_code": fileCode,
+        },
+      ),
     );
   }
 
+  void onServerError(stack) {
+    onConnect("Не удалось подключиться к серверу");
+  }
+
   void listenServer(message) {
-    var json = jsonDecode(message);
     EditorAction? action;
+    var json = jsonDecode(message);
 
     switch (json["action"]) {
-      case "new_user":
-        var user = jsonDecode(json["user"]);
-        var username = user["user_name"].toString();
-
-        if (username != localUser.name) {
-          var point = user["position"];
-          users.add(
-            User(
-              Point(point[0], point[1]),
-              username,
-              Colors.indigo,
-              Selection(
-                const Point(0, 0),
-                const Point(0, 0),
-              ),
-            ),
-          );
-          notifyListeners();
-        }
+      case createFile:
+        file.fileCode = json["file_code"];
+        onConnect(null);
         break;
-
-      case "position_update":
-        action = UpdatePositionAction.fromJson(json);
-        action.execute(this);
-        notifyListeners();
-        break;
-
-      case "user_exit":
-        var username = json["username"].toString();
-        users.removeWhere((user) => user.name == username);
-        notifyListeners();
-        break;
-
-      case "send_file_state":
+      case updateFileState:
         var jsonUsers = json["users"];
+        var fileLines = json["file"];
 
         for (var user in jsonUsers) {
           var userJson = jsonDecode(user);
           var point = userJson["position"];
-
           users.add(User(
             Point(point[0], point[1]),
             userJson["username"],
@@ -180,22 +145,52 @@ class EditorModel extends ChangeNotifier {
           ));
         }
 
+        for (String line in fileLines) {
+          file.lines.add(Pair(line, GlobalKey()));
+        }
+        onConnect(null);
+        break;
+
+      case error:
+        onConnect(json["error_message"]);
+        break;
+
+      case userConnect:
+        users.add(User(
+          const Point(0, 0),
+          json["username"],
+          Colors.indigo,
+          Selection(
+            const Point(0, 0),
+            const Point(0, 0),
+          ),
+        ));
         notifyListeners();
         break;
 
-      case "replace_text":
+      case userDisconnect:
+        users.removeWhere((user) => user.name == json["username"]);
+        notifyListeners();
+        break;
+
+      case replaceText:
         action = ReplaceTextAction.fromJson(json);
+        action.execute(this);
+        notifyListeners();
+        break;
+
+      case updatePosition:
+        action = UpdatePositionAction.fromJson(json);
         action.execute(this);
         notifyListeners();
         break;
     }
 
-    onUpdate();
+    if (onUpdate != null) {
+      onUpdate!();
+    }
 
-    if (requestQueue.isNotEmpty && action != null
-      && (action == requestQueue.first)
-    
-    ) {
+    if (requestQueue.isNotEmpty && action != null && (action == requestQueue.first)) {
       requestQueue.removeFirst();
     }
   }

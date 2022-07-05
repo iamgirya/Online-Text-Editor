@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'colors.dart';
+
 const textStyle = TextStyle(
   fontFamily: "Roboto",
   fontStyle: FontStyle.normal,
-  color: Colors.black,
+  color: text,
   fontSize: 16,
   height: 1.25,
   letterSpacing: 0,
@@ -13,7 +15,6 @@ const textStyle = TextStyle(
 var textStyleHighlight = const TextStyle(
   fontFamily: "Roboto",
   fontStyle: FontStyle.normal,
-  //background: Paint()..color = Colors.blue,
   color: Colors.white,
   fontSize: 16,
   height: 1.25,
@@ -29,4 +30,22 @@ var indexStyle = TextStyle(
   height: 1.25,
   letterSpacing: 0,
   decorationStyle: null,
+);
+
+var buttonStyle = ButtonStyle(
+  backgroundColor: MaterialStateProperty.all(highlight),
+  elevation: MaterialStateProperty.all(0),
+  shape: MaterialStateProperty.all(
+    const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+  ),
+  fixedSize: MaterialStateProperty.all(const Size(256, 42)),
+);
+
+var plainButton = ButtonStyle(
+  backgroundColor: MaterialStateProperty.all(Colors.transparent),
+  foregroundColor: MaterialStateProperty.all(text),
+  elevation: MaterialStateProperty.all(0),
+  shape: MaterialStateProperty.all(
+    const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+  ),
 );

@@ -44,31 +44,31 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
       if (editor.localUser.cursorPosition.x == editor.file.lines[editor.localUser.cursorPosition.y].first.length) {
         if (editor.localUser.cursorPosition.y < editor.file.lines.length - 1) {
           editor.sendJSON(
-            UpdatePositionAction(editor.localUserName, Point(0, editor.localUser.cursorPosition.y + 1,))
+            UpdatePositionAction(editor.localUserName, Point(0, editor.localUser.cursorPosition.y + 1)),
           );
           preffereCursorPositionX = editor.localUser.cursorPosition.x;
         }
       } else {
         editor.sendJSON(
-          UpdatePositionAction(editor.localUserName, Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y))
+          UpdatePositionAction(
+              editor.localUserName, Point(editor.localUser.cursorPosition.x + 1, editor.localUser.cursorPosition.y)),
         );
       }
       preffereCursorPositionX = editor.localUser.cursorPosition.x;
     } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       if (editor.localUser.cursorPosition.x == 0) {
         if (editor.localUser.cursorPosition.y > 0) {
-          editor.sendJSON(
-            UpdatePositionAction(editor.localUserName, Point(
-              editor.file.lines[editor.localUser.cursorPosition.y - 1].first.length,
-              editor.localUser.cursorPosition.y - 1,
-            ))
-          );
+          editor.sendJSON(UpdatePositionAction(
+              editor.localUserName,
+              Point(
+                editor.file.lines[editor.localUser.cursorPosition.y - 1].first.length,
+                editor.localUser.cursorPosition.y - 1,
+              )));
           preffereCursorPositionX = editor.localUser.cursorPosition.x;
         }
       } else {
-        editor.sendJSON(
-          UpdatePositionAction(editor.localUserName, Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y))
-        );
+        editor.sendJSON(UpdatePositionAction(
+            editor.localUserName, Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y)));
         preffereCursorPositionX = editor.localUser.cursorPosition.x;
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
@@ -82,7 +82,11 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         ),
         element,
       );
-      double yOffset = (editor.file.lines[editor.localUser.cursorPosition.y].second.currentState! as LineWidgetState).usersOnLine.isEmpty ? 0 : 20;
+      double yOffset = (editor.file.lines[editor.localUser.cursorPosition.y].second.currentState! as LineWidgetState)
+              .usersOnLine
+              .isEmpty
+          ? 0
+          : 20;
 
       if (cursorPosition != null) {
         // делаем сдвиг по координатам
@@ -97,9 +101,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
         if (newPosition != null) {
           if (newPosition != editor.localUser.cursorPosition) {
-            editor.sendJSON(
-              UpdatePositionAction(editor.localUserName, newPosition)
-            );
+            editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
             preffereCursorPositionX = newPosition.x;
           }
           // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
@@ -108,9 +110,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             element = editor.file.lines[editor.localUser.cursorPosition.y - 1].second.currentContext as Element;
             newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
-              editor.sendJSON(
-                UpdatePositionAction(editor.localUserName, newPosition)
-              );
+              editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
               preffereCursorPositionX = newPosition.x;
             }
           }
@@ -129,7 +129,11 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         ),
         element,
       );
-      double yOffset = (editor.file.lines[editor.localUser.cursorPosition.y].second.currentState! as LineWidgetState).usersOnLine.isEmpty ? 0 : 20;
+      double yOffset = (editor.file.lines[editor.localUser.cursorPosition.y].second.currentState! as LineWidgetState)
+              .usersOnLine
+              .isEmpty
+          ? 0
+          : 20;
 
       if (cursorPosition != null) {
         // делаем сдвиг по координатам
@@ -144,9 +148,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
 
         if (newPosition != null) {
           if (newPosition != editor.localUser.cursorPosition) {
-            editor.sendJSON(
-              UpdatePositionAction(editor.localUserName, newPosition)
-            );
+            editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
             preffereCursorPositionX = newPosition.x;
           }
           // Случай, когда при сдвиге положение курсора не изменилось возможно лишь при случае, когда с линии, на которой есть другой пользователь идёт попытака перейти на другую линию. В этом случае, наборот, не учитываем сдвиг по y
@@ -155,9 +157,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
             element = editor.file.lines[editor.localUser.cursorPosition.y + 1].second.currentContext as Element;
             newPosition = getCursorPositionInText(cursorPosition, element);
             if (newPosition != null) {
-              editor.sendJSON(
-                UpdatePositionAction(editor.localUserName, newPosition)
-              );
+              editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
               preffereCursorPositionX = newPosition.x;
             }
           }
@@ -230,13 +230,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         result == null &&
         (element.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
       var transform = element.renderObject!.getTransformTo(null).getTranslation();
-      var frame = Rect.fromLTWH(
-        transform.x,
-        transform.y,
-        element.renderObject!.paintBounds.width,
-        element.renderObject!.paintBounds.height,
-      );
-
       var state = (element as StatefulElement).state as LineWidgetState;
       var lineOffset =
           state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
@@ -259,185 +252,127 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     editor = EditorInherit.of(context).editor;
     editor.onUpdate = () {
       setState(() {});
-    }; 
-
-    return ChangeNotifierProvider.value(
-        value: editor,
-        child: LayoutBuilder(
-          builder: ((context, constraints) {
-            editorHeight = constraints.maxHeight;
-            return GestureDetector(
-              onTapDown: (details) {
-                textEditorFocus.requestFocus();
-                context.visitChildElements((element) {
-                  var newPosition = getCursorPositionInText(details.globalPosition, element);
-                  if (newPosition != null) {
-                    // двойной клик и выделение слова
-                    if (newPosition == editor.localUser.cursorPosition &&
-                        DateTime.now().difference(lastTapTime).inMilliseconds < 400) {
-                      int startOfWord =
-                          editor.file.lines[newPosition.y].first.substring(0, newPosition.x).lastIndexOf(' ') + 1;
-                      int endOfWord = editor.file.lines[newPosition.y].first.substring(newPosition.x).indexOf(' ');
-                      if (endOfWord == -1) {
-                        endOfWord = editor.file.lines[newPosition.y].first.length;
-                      } else {
-                        endOfWord += newPosition.x;
-                      }
-                      editor.sendJSON(
-                        UpdatePositionAction(editor.localUserName, Point(endOfWord, newPosition.y))
-                      );
-                      editor.updateLocalUser(
-                        newSelection: Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y))
-                      );
-                      preffereCursorPositionX = endOfWord;
-                    } else {
-                      // обычный клик
-                      editor.sendJSON(
-                        UpdatePositionAction(editor.localUserName, newPosition)
-                      );
-                      editor.updateLocalUser(newSelection: null);
-                      preffereCursorPositionX = newPosition.x;
-                    }
-                    lastTapTime = DateTime.now();
-                  }
-                });
-              },
-              // начало выделение
-              onHorizontalDragStart: (details) {
-                editor.updateLocalUser(newSelection: null);
-                textEditorFocus.requestFocus();
-                highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
-              },
-              // начало выделение
-              onVerticalDragStart: (details) {
-                editor.updateLocalUser(newSelection: null);
-                textEditorFocus.requestFocus();
-                highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
-              },
-              // отображение выделения
-              onHorizontalDragUpdate: (details) {
-                var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
-                if (highlightStart != null && newPosition != null) {
-                  editor.sendJSON(
-                    UpdatePositionAction(editor.localUserName, newPosition)
-                  );
-                  editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
-                  preffereCursorPositionX = newPosition.x;
-                  //скролл
-                  scrollList(editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
-                }
-              },
-              // отображение выделения
-              onVerticalDragUpdate: (details) {
-                var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
-                if (highlightStart != null && newPosition != null) {
-                  editor.sendJSON(
-                    UpdatePositionAction(editor.localUserName, newPosition)
-                  );
-                  editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
-                  preffereCursorPositionX = newPosition.x;
-                  //скролл
-                  scrollList(editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
-                }
-              },
-              // конец выделения
-              onHorizontalDragEnd: (details) {
-                highlightStart = null;
-              },
-              // конец выделения
-              onVerticalDragEnd: (details) {
-                highlightStart = null;
-                
-              },
-              child: KeyboardListener(
-                autofocus: true,
-                focusNode: textEditorFocus,
-                onKeyEvent: (keyEvent) {
-                  String newLine = "";
-                  String secondLine = "";
-                  
-                  if (keyEvent is! KeyUpEvent) {
-                    
-                    // ctrl+V
-                    if (keyEvent.logicalKey == LogicalKeyboardKey.keyV &&
-                        isCtrlPressed) {
-                        Clipboard.getData(Clipboard.kTextPlain).then((value) => 
-                          editor.sendJSON(ReplaceTextAction(editor.localUserName, value!.text!, editor.localUser.selection))
-                        ).onError((error, stackTrace) => print("Error in Crtl+V"));
-                      // ctrl+C
-                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.keyC &&
-                        isCtrlPressed) {
-                        String selectedText = editor.getSelectedText();
-                        if (selectedText != "") {
-                          Clipboard.setData(ClipboardData(text: selectedText));
+    };
+    return Scaffold(
+      body: ChangeNotifierProvider.value(
+          value: editor,
+          child: LayoutBuilder(
+            builder: ((context, constraints) {
+              editorHeight = constraints.maxHeight;
+              return GestureDetector(
+                onTapDown: (details) {
+                  textEditorFocus.requestFocus();
+                  context.visitChildElements((element) {
+                    var newPosition = getCursorPositionInText(details.globalPosition, element);
+                    if (newPosition != null) {
+                      // двойной клик и выделение слова
+                      if (newPosition == editor.localUser.cursorPosition &&
+                          DateTime.now().difference(lastTapTime).inMilliseconds < 400) {
+                        int startOfWord =
+                            editor.file.lines[newPosition.y].first.substring(0, newPosition.x).lastIndexOf(' ') + 1;
+                        int endOfWord = editor.file.lines[newPosition.y].first.substring(newPosition.x).indexOf(' ');
+                        if (endOfWord == -1) {
+                          endOfWord = editor.file.lines[newPosition.y].first.length;
+                        } else {
+                          endOfWord += newPosition.x;
                         }
-                      // ввод символа
-                    } else if (keyEvent.character != null &&
-                        keyEvent.logicalKey != LogicalKeyboardKey.enter &&
-                        keyEvent.logicalKey != LogicalKeyboardKey.backspace &&
-                        keyEvent.logicalKey != LogicalKeyboardKey.control) {
-                      var action =
-                          ReplaceTextAction(editor.localUserName, keyEvent.character!, editor.localUser.selection);
-                      editor.sendJSON(action);
-                      // стирание
-                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
-                      if (editor.localUser.cursorPosition.x == 0 &&
-                          editor.localUser.selection.isEmpty &&
-                          editor.localUser.cursorPosition.y != 0) {
-                        var action = ReplaceTextAction(
-                          editor.localUserName,
-                          "",
-                          Selection(
-                            Point(editor.file.lines[editor.localUser.cursorPosition.y - 1].first.length,
-                                editor.localUser.cursorPosition.y - 1),
-                            Point(0, editor.localUser.cursorPosition.y),
-                          ),
-                        );
-                        editor.sendJSON(action);
+                        editor.sendJSON(UpdatePositionAction(editor.localUserName, Point(endOfWord, newPosition.y)));
+                        editor.updateLocalUser(
+                            newSelection:
+                                Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y)));
+                        preffereCursorPositionX = endOfWord;
                       } else {
-                        var action = ReplaceTextAction(
-                            editor.localUserName,
-                            "",
-                            editor.localUser.selection.isEmpty
-                                ? Selection(
-                                    Point(editor.localUser.cursorPosition.x - 1, editor.localUser.cursorPosition.y),
-                                    editor.localUser.cursorPosition)
-                                : editor.localUser.selection.readyToWork);
-                        editor.sendJSON(action);
+                        // обычный клик
+                        editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
+                        editor.updateLocalUser(newSelection: null);
+                        preffereCursorPositionX = newPosition.x;
                       }
-                      // добавление новой строки
-                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
-                      var action = ReplaceTextAction(editor.localUserName, "\n", editor.localUser.selection);
-                      editor.sendJSON(action);
-                      // управление стрелочками
-                    } else if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft || keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
-                      isCtrlPressed = true;
-                    } else {
-                      keyboardNavigation(keyEvent);
+                      lastTapTime = DateTime.now();
                     }
-                  } else {
-                    if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft || keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
-                      isCtrlPressed = false;
-                    }
+                  });
+                },
+                // начало выделение
+                onHorizontalDragStart: (details) {
+                  editor.updateLocalUser(newSelection: null);
+                  textEditorFocus.requestFocus();
+                  highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
+                },
+                // начало выделение
+                onVerticalDragStart: (details) {
+                  editor.updateLocalUser(newSelection: null);
+                  textEditorFocus.requestFocus();
+                  highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
+                },
+                // отображение выделения
+                onHorizontalDragUpdate: (details) {
+                  var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
+                  if (highlightStart != null && newPosition != null) {
+                    editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
+                    editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
+                    preffereCursorPositionX = newPosition.x;
+                    //скролл
+                    scrollList(editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
                   }
                 },
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 16, bottom: 16),
-                  itemCount: editor.file.lines.length,
-                  itemBuilder: ((context, index) {
+                // отображение выделения
+                onVerticalDragUpdate: (details) {
+                  var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
+                  if (highlightStart != null && newPosition != null) {
+                    editor.sendJSON(UpdatePositionAction(editor.localUserName, newPosition));
+                    editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
+                    preffereCursorPositionX = newPosition.x;
+                    //скролл
+                    scrollList(editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
+                  }
+                },
+                // конец выделения
+                onHorizontalDragEnd: (details) {
+                  highlightStart = null;
+                },
+                // конец выделения
+                onVerticalDragEnd: (details) {
+                  highlightStart = null;
+                },
+                child: KeyboardListener(
+                  autofocus: true,
+                  focusNode: textEditorFocus,
+                  onKeyEvent: (keyEvent) {
+                    if (keyEvent is! KeyUpEvent) {
+                      // ввод символа
+                      if (keyEvent.character != null &&
+                          keyEvent.logicalKey != LogicalKeyboardKey.enter &&
+                          keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
+                        editor.sendJSON(ReplaceTextAction(editor.localUserName, [keyEvent.character!]));
+                        // стирание
+                      } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
+                        //TODO: реализовать стирание (желательно через тот же класс replace_text_action)
 
-                    return LineWidget(
-                      key: editor.file.lines[index].second,
-                      text: editor.file.lines[index].first,
-                      index: index,
-                      lineWidth: constraints.maxWidth,
-                    );
-                  }),
-                  controller: scrollController,
+                        // добавление новой строки
+                      } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
+                        editor.sendJSON(ReplaceTextAction(editor.localUserName, ["\n"]));
+                        // управление стрелочками
+                      } else {
+                        keyboardNavigation(keyEvent);
+                      }
+                    }
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 16, bottom: 16),
+                    itemCount: editor.file.lines.length,
+                    itemBuilder: ((context, index) {
+                      return LineWidget(
+                        key: editor.file.lines[index].second,
+                        text: editor.file.lines[index].first,
+                        index: index,
+                        lineWidth: constraints.maxWidth,
+                      );
+                    }),
+                    controller: scrollController,
+                  ),
                 ),
-              ),
-            );
-          }),
-        ));
+              );
+            }),
+          )),
+    );
   }
 }
