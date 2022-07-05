@@ -338,10 +338,25 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   focusNode: textEditorFocus,
                   onKeyEvent: (keyEvent) {
                     if (keyEvent is! KeyUpEvent) {
-                      // ввод символа
-                      if (keyEvent.character != null &&
+                      // ctrl+V
+                      if (keyEvent.logicalKey == LogicalKeyboardKey.keyV && isCtrlPressed) {
+                        Clipboard.getData(Clipboard.kTextPlain)
+                            .then(
+                              (value) =>
+                                  editor.sendJSON(ReplaceTextAction(editor.localUserName, value!.text!.split("\n"))),
+                            )
+                            .onError((error, stackTrace) => print("Error in Crtl+V"));
+                        // ctrl+C
+                      } else if (keyEvent.logicalKey == LogicalKeyboardKey.keyC && isCtrlPressed) {
+                        String selectedText = editor.getSelectedText();
+                        if (selectedText != "") {
+                          Clipboard.setData(ClipboardData(text: selectedText));
+                        }
+                        // ввод символа
+                      } else if (keyEvent.character != null &&
                           keyEvent.logicalKey != LogicalKeyboardKey.enter &&
-                          keyEvent.logicalKey != LogicalKeyboardKey.backspace) {
+                          keyEvent.logicalKey != LogicalKeyboardKey.backspace &&
+                          keyEvent.logicalKey != LogicalKeyboardKey.control) {
                         editor.sendJSON(ReplaceTextAction(editor.localUserName, [keyEvent.character!]));
                         // стирание
                       } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
@@ -350,9 +365,17 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                         // добавление новой строки
                       } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
                         editor.sendJSON(ReplaceTextAction(editor.localUserName, ["\n"]));
+                      } else if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft ||
+                          keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
+                        isCtrlPressed = true;
                         // управление стрелочками
                       } else {
                         keyboardNavigation(keyEvent);
+                      }
+                    } else {
+                      if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft ||
+                          keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
+                        isCtrlPressed = false;
                       }
                     }
                   },

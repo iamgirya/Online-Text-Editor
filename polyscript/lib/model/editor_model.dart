@@ -37,12 +37,12 @@ class EditorModel extends ChangeNotifier {
 
   String getSelectedText() {
     String text = "";
-    Selection selection = localUser.selection.readyToWork;
+    Selection selection = localUser.selection;
     if (selection.start.y == selection.end.y) {
       text = file.lines[selection.start.y].first.substring(selection.start.x, selection.end.x);
     } else {
       text = file.lines[selection.start.y].first.substring(selection.start.x);
-      for (int i = selection.start.y+1; i < selection.end.y; i++) {
+      for (int i = selection.start.y + 1; i < selection.end.y; i++) {
         text += "\n" + file.lines[i].first;
       }
       text += file.lines[selection.end.y].first.substring(0, selection.end.x);
