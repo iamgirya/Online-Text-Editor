@@ -25,10 +25,23 @@ class Selection {
     }
   }
 
-  bool constaint(Point<int> p) {
-    return (p.y > start.y && p.y < end.y) ||
-        (start.y == end.y && p.y == start.y && p.x > start.x && p.x < end.x) ||
-        (start.y != end.y && ((p.y == start.y && p.x > start.x) || (p.y == end.y && p.x < end.x)));
+  bool constaint(Point<int> p, {bool includeEdges = false}) {
+    if (includeEdges) {
+      return (p.y >= start.y && p.y <= end.y) ||
+          (start.y == end.y && p.y == start.y && p.x >= start.x && p.x <= end.x) ||
+          (start.y != end.y && ((p.y == start.y && p.x >= start.x) || (p.y == end.y && p.x <= end.x)));
+    } else {
+      return (p.y > start.y && p.y < end.y) ||
+          (start.y == end.y && p.y == start.y && p.x > start.x && p.x < end.x) ||
+          (start.y != end.y && ((p.y == start.y && p.x > start.x) || (p.y == end.y && p.x < end.x)));
+    }
+  }
+
+  bool intersect(Selection selection) {
+    return constaint(selection.start, includeEdges: true) ||
+        constaint(selection.end, includeEdges: true) ||
+        selection.constaint(start, includeEdges: true) ||
+        selection.constaint(end, includeEdges: true);
   }
 
   Selection copy() {

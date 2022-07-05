@@ -4,14 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:polyscript/model/editor_model.dart';
 import 'package:polyscript/model/user_model.dart';
-import 'package:polyscript/ui/editor/line_widget.dart';
+import 'package:polyscript/ui/editor/line/line_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/actions/replace_text_action.dart';
 import '../../model/actions/update_position_action.dart';
 import 'editor_inherit.dart';
-
-import 'package:flutter/services.dart';
 
 class TextEditorWidget extends StatefulWidget {
   const TextEditorWidget({Key? key}) : super(key: key);

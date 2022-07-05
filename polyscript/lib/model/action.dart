@@ -3,10 +3,8 @@ import 'package:polyscript/model/editor_model.dart';
 class EditorActionInterface {
   String get actionName => "";
 
-  //метод, выполняющий преобразования над моделью
   void execute(EditorModel model) => {};
 
-  //метод, преобразующий информацию о действии в JSON для отправки на сервер
   dynamic toJson() => {};
 }
 

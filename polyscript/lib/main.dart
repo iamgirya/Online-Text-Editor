@@ -54,6 +54,35 @@ class _MainWidgetState extends State<MainWidget> {
     );
   }
 
+  Widget get topBar {
+    return SizedBox(
+      height: 58,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
+        child: Row(
+          children: [
+            appTitle,
+            const Spacer(),
+            usernameField,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget get appTitle {
+    return const Text(
+      "Polyscript",
+      style: TextStyle(
+        fontFamily: "Roboto",
+        fontStyle: FontStyle.normal,
+        fontWeight: FontWeight.w900,
+        color: text,
+        fontSize: 20,
+      ),
+    );
+  }
+
   Widget get usernameField {
     return Container(
       width: 196,
@@ -77,35 +106,6 @@ class _MainWidgetState extends State<MainWidget> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget get appTitle {
-    return const Text(
-      "Polyscript",
-      style: TextStyle(
-        fontFamily: "Roboto",
-        fontStyle: FontStyle.normal,
-        fontWeight: FontWeight.w900,
-        color: text,
-        fontSize: 20,
-      ),
-    );
-  }
-
-  Widget get topBar {
-    return SizedBox(
-      height: 58,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
-        child: Row(
-          children: [
-            appTitle,
-            const Spacer(),
-            usernameField,
-          ],
-        ),
       ),
     );
   }

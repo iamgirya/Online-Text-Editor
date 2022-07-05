@@ -4,7 +4,8 @@ import 'dart:math';
 import 'package:polyscript/model/action.dart';
 import 'package:polyscript/model/action_names.dart';
 import 'package:polyscript/model/editor_model.dart';
-import 'package:polyscript/model/user_model.dart';
+
+import '../user_model.dart';
 
 class UpdatePositionAction extends EditorAction {
   @override
@@ -20,7 +21,6 @@ class UpdatePositionAction extends EditorAction {
   @override
   void execute(EditorModel model) {
     var movedUser = model.users.firstWhere((user) => user.name == username);
-
     movedUser.cursorPosition = position;
     movedUser.selection = Selection(position, position);
   }

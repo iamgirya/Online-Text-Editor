@@ -7,6 +7,7 @@ import 'package:polyscript/model/action_names.dart';
 import 'package:polyscript/model/actions/replace_text_action.dart';
 import 'package:polyscript/model/actions/update_position_action.dart';
 import 'package:polyscript/model/file_model.dart';
+import 'package:polyscript/ui/colors.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'action.dart';
@@ -66,7 +67,7 @@ class EditorModel extends ChangeNotifier {
       User(
         const Point(0, 0),
         localUserName,
-        Colors.indigo,
+        randomCursorColor(),
         Selection(const Point(0, 0), const Point(0, 0)),
       ),
     ];
@@ -92,7 +93,7 @@ class EditorModel extends ChangeNotifier {
       User(
         const Point(0, 0),
         localUserName,
-        Colors.indigo,
+        randomCursorColor(),
         Selection(const Point(0, 0), const Point(0, 0)),
       ),
     ];
@@ -137,7 +138,7 @@ class EditorModel extends ChangeNotifier {
           users.add(User(
             Point(point[0], point[1]),
             userJson["username"],
-            Colors.indigo,
+            randomCursorColor(),
             Selection(
               const Point(0, 0),
               const Point(0, 0),
@@ -159,7 +160,7 @@ class EditorModel extends ChangeNotifier {
         users.add(User(
           const Point(0, 0),
           json["username"],
-          Colors.indigo,
+          randomCursorColor(),
           Selection(
             const Point(0, 0),
             const Point(0, 0),
