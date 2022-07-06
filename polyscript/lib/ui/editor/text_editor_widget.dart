@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,15 +21,16 @@ class TextEditorWidget extends StatefulWidget {
 
 class _TextEditorWidgetState extends State<TextEditorWidget> {
   final ScrollController scrollController = ScrollController();
-  late EditorModel editor;
-  late var textEditorFocus = FocusNode();
+
+  var textEditorFocus = FocusNode();
   var editorHeight = 0.0;
-  late var preffereCursorPositionX = 0;
+  var preffereCursorPositionX = 0;
+  var lastPresentedLineIndex = 0;
+  var isCtrlPressed = false;
 
   late DateTime lastTapTime;
-
-  Point<int>? highlightStart;
-  bool isCtrlPressed = false;
+  late Point<int>? highlightStart;
+  late EditorModel editor;
 
   @override
   void initState() {
@@ -36,6 +38,189 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
     lastTapTime = DateTime.now();
     scrollController.addListener(() {});
   }
+
+  @override
+  Widget build(BuildContext context) {
+    editor = EditorInherit.of(context).editor;
+    editor.onUpdate = () {
+      setState(() {});
+    };
+
+    return Scaffold(
+      body: ChangeNotifierProvider.value(
+        value: editor,
+        child: Column(
+          children: [
+            EditorBar(key: GlobalKey()),
+            Expanded(
+              child: LayoutBuilder(
+                builder: ((context, constraints) {
+                  editorHeight = constraints.maxHeight;
+                  return GestureDetector(
+                    onTapDown: (details) {
+                      textEditorFocus.requestFocus();
+                      var cursorPosition = pixelPositionToCursorPosition(details.globalPosition);
+                      if (cursorPosition != null) {
+                        if (wasDoubleTap(cursorPosition)) {
+                          selectWord(cursorPosition);
+                        } else {
+                          updateLocalUserPosition(cursorPosition);
+                        }
+                        lastTapTime = DateTime.now();
+                      }
+                    },
+                    // начало выделение
+                    onHorizontalDragStart: (details) {
+                      editor.updateLocalUser(newSelection: null);
+                      textEditorFocus.requestFocus();
+                      highlightStart = pixelPositionToCursorPosition(details.globalPosition);
+                    },
+                    // начало выделение
+                    onVerticalDragStart: (details) {
+                      editor.updateLocalUser(newSelection: null);
+                      textEditorFocus.requestFocus();
+                      highlightStart = pixelPositionToCursorPosition(details.globalPosition);
+                    },
+                    // отображение выделения
+                    onHorizontalDragUpdate: (details) {
+                      updateSelection(details.globalPosition);
+                    },
+                    // отображение выделения
+                    onVerticalDragUpdate: (details) {
+                      updateSelection(details.globalPosition);
+                    },
+                    // конец выделения
+                    onHorizontalDragEnd: (details) {
+                      highlightStart = null;
+                    },
+                    // конец выделения
+                    onVerticalDragEnd: (details) {
+                      highlightStart = null;
+                    },
+                    child: KeyboardListener(
+                      autofocus: true,
+                      focusNode: textEditorFocus,
+                      onKeyEvent: (keyEvent) {
+                        processKeyEvent(keyEvent);
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 16, bottom: 16),
+                        itemCount: editor.file.lines.length,
+                        itemBuilder: ((context, index) {
+                          lastPresentedLineIndex = index;
+                          return LineWidget(
+                            key: editor.file.lines[index].second,
+                            text: editor.file.lines[index].first,
+                            index: index,
+                            lineWidth: constraints.maxWidth,
+                          );
+                        }),
+                        controller: scrollController,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void processKeyEvent(KeyEvent event) {
+    if (event is! KeyUpEvent) {
+      if (isCtrlVEvent(event)) {
+        pasteTextFromClipboard();
+      } else if (isCtrlCEvent(event)) {
+        copyTextToClipboard();
+      } else if (isCharInputEvent(event)) {
+        editor.sendJSON(
+          ReplaceTextAction(editor.localUser.name, [event.character!]),
+        );
+      } else if (isDeleteEvent(event)) {
+        editor.sendJSON(
+          ClearTextAction(editor.localUser.name),
+        );
+      } else if (isNewLineEvent(event)) {
+        editor.sendJSON(
+          ReplaceTextAction(editor.localUser.name, ["\n"]),
+        );
+      } else if (isControlPressed(event)) {
+        isCtrlPressed = true;
+      } else {
+        keyboardNavigation(event);
+      }
+    } else {
+      if (isControlPressed(event)) {
+        isCtrlPressed = false;
+      }
+    }
+  }
+
+  void scrollListOnEdges() {
+    var cursorPosition = cursorPositionToPixelPosition(editor.localUser.cursorPosition);
+    if (cursorPosition != null && cursorPosition.dy > editorHeight) {
+      scrollController.animateTo(scrollController.offset + (cursorPosition.dy - editorHeight + 20 + 16),
+          duration: const Duration(milliseconds: 100), curve: Curves.linear);
+    }
+    if (cursorPosition != null && cursorPosition.dy < 42) {
+      scrollController.animateTo(scrollController.offset + cursorPosition.dy - 20,
+          duration: const Duration(milliseconds: 100), curve: Curves.linear);
+    }
+  }
+
+  void updateLocalUserPosition(Point<int> newPosition) {
+    editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
+    preffereCursorPositionX = newPosition.x;
+  }
+
+  void selectWord(Point<int> position) {
+    int startOfWord = editor.file.lines[position.y].first.substring(0, position.x).lastIndexOf(' ') + 1;
+    int endOfWord = editor.file.lines[position.y].first.substring(position.x).indexOf(' ');
+    if (endOfWord == -1) {
+      endOfWord = editor.file.lines[position.y].first.length;
+    } else {
+      endOfWord += position.x;
+    }
+    editor.sendJSON(UpdatePositionAction(editor.localUser.name, Point(endOfWord, position.y)));
+    editor.updateLocalUser(newSelection: Selection(Point(startOfWord, position.y), Point(endOfWord, position.y)));
+    preffereCursorPositionX = endOfWord;
+  }
+
+  void pasteTextFromClipboard() {
+    Clipboard.getData(Clipboard.kTextPlain).then(
+      (value) => editor.sendJSON(ReplaceTextAction(editor.localUser.name, value!.text!.split("\n"))),
+    );
+  }
+
+  void copyTextToClipboard() {
+    String selectedText = editor.getSelectedText();
+    if (selectedText != "") {
+      Clipboard.setData(ClipboardData(text: selectedText));
+    }
+  }
+
+  bool wasDoubleTap(Point<int> position) =>
+      position == editor.localUser.cursorPosition && DateTime.now().difference(lastTapTime).inMilliseconds < 400;
+
+  bool isCharInputEvent(KeyEvent event) =>
+      event.character != null &&
+      event.logicalKey != LogicalKeyboardKey.enter &&
+      event.logicalKey != LogicalKeyboardKey.backspace &&
+      event.logicalKey != LogicalKeyboardKey.control;
+
+  bool isCtrlCEvent(KeyEvent event) => isCtrlPressed && event.logicalKey == LogicalKeyboardKey.keyC;
+
+  bool isCtrlVEvent(KeyEvent event) => isCtrlPressed && event.logicalKey == LogicalKeyboardKey.keyV;
+
+  bool isDeleteEvent(KeyEvent event) => event.logicalKey == LogicalKeyboardKey.backspace;
+
+  bool isNewLineEvent(KeyEvent event) => event.logicalKey == LogicalKeyboardKey.enter;
+
+  bool isControlPressed(KeyEvent event) => Platform.isWindows
+      ? event.logicalKey == LogicalKeyboardKey.controlLeft || event.logicalKey == LogicalKeyboardKey.controlRight
+      : event.logicalKey == LogicalKeyboardKey.metaLeft || event.logicalKey == LogicalKeyboardKey.metaLeft;
 
   void keyboardNavigation(KeyEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
@@ -71,15 +256,9 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       // LineWidget, на котором находится курсор
-      Element element = editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element;
+      Element? element = editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element?;
       Point<int>? newPosition;
-      Offset? cursorPosition = getCursorPositionInScreen(
-        Offset(
-          editor.localUser.cursorPosition.x.toDouble(),
-          editor.localUser.cursorPosition.y.toDouble(),
-        ),
-        element,
-      );
+      Offset? cursorPosition = cursorPositionToPixelPosition(editor.localUser.cursorPosition);
       double yOffset = (editor.file.lines[editor.localUser.cursorPosition.y].second.currentState! as LineWidgetState)
               .isExistUnlocalUsersOnLine
           ? 20
@@ -89,11 +268,11 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         // делаем сдвиг по координатам
         cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy - LineWidget.baseHeight + yOffset);
         // вычисляем новое положение
-        newPosition = getCursorPositionInText(cursorPosition, element);
+        newPosition = pixelPositionToCursorPosition(cursorPosition);
         // если оно null, значит, курсор переходит на следующий LineWidget
         if (newPosition == null && editor.localUser.cursorPosition.y > 0) {
           element = editor.file.lines[editor.localUser.cursorPosition.y - 1].second.currentContext as Element;
-          newPosition = getCursorPositionInText(cursorPosition, element);
+          newPosition = pixelPositionToCursorPosition(cursorPosition);
         }
 
         if (newPosition != null) {
@@ -105,27 +284,21 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           else if (editor.localUser.cursorPosition.y > 0) {
             cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy - LineWidget.baseHeight);
             element = editor.file.lines[editor.localUser.cursorPosition.y - 1].second.currentContext as Element;
-            newPosition = getCursorPositionInText(cursorPosition, element);
+            newPosition = pixelPositionToCursorPosition(cursorPosition);
             if (newPosition != null) {
               editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
               preffereCursorPositionX = newPosition.x;
             }
           }
 
-          scrollList(element);
+          scrollListOnEdges();
         }
       }
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
       // LineWidget, на котором находится курсор
-      Element element = editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element;
+      Element? element = editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element?;
       Point<int>? newPosition;
-      Offset? cursorPosition = getCursorPositionInScreen(
-        Offset(
-          editor.localUser.cursorPosition.x.toDouble(),
-          editor.localUser.cursorPosition.y.toDouble(),
-        ),
-        element,
-      );
+      Offset? cursorPosition = cursorPositionToPixelPosition(editor.localUser.cursorPosition);
       double yOffset = (editor.file.lines[editor.localUser.cursorPosition.y].second.currentState! as LineWidgetState)
               .isExistUnlocalUsersOnLine
           ? 20
@@ -135,11 +308,11 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
         // делаем сдвиг по координатам
         cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy + LineWidget.baseHeight + yOffset);
         // вычисляем новое положение
-        newPosition = getCursorPositionInText(cursorPosition, element);
+        newPosition = pixelPositionToCursorPosition(cursorPosition);
         // если оно null, значит, курсор переходит на следующий LineWidget
         if (newPosition == null && editor.localUser.cursorPosition.y + 1 < editor.file.lines.length) {
           element = editor.file.lines[editor.localUser.cursorPosition.y + 1].second.currentContext as Element;
-          newPosition = getCursorPositionInText(cursorPosition, element);
+          newPosition = pixelPositionToCursorPosition(cursorPosition);
         }
 
         if (newPosition != null) {
@@ -151,255 +324,98 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
           else if (editor.localUser.cursorPosition.y + 1 < editor.file.lines.length) {
             cursorPosition = Offset(cursorPosition.dx, cursorPosition.dy + LineWidget.baseHeight);
             element = editor.file.lines[editor.localUser.cursorPosition.y + 1].second.currentContext as Element;
-            newPosition = getCursorPositionInText(cursorPosition, element);
+            newPosition = pixelPositionToCursorPosition(cursorPosition);
             if (newPosition != null) {
               editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
               preffereCursorPositionX = newPosition.x;
             }
           }
 
-          scrollList(element);
+          scrollListOnEdges();
         }
       }
     }
   }
 
-  //если курсор находится выше или ниже, то делать скролл до его местонахождения
-  void scrollList(Element element) {
-    var cursorPosition = getCursorPositionInScreen(
-      Offset(editor.localUser.cursorPosition.x.toDouble(), editor.localUser.cursorPosition.y.toDouble()),
-      element,
+  Point<int>? pixelPositionToCursorPosition(Offset pixelPosition) {
+    var lineElement = findLineElementUnderPosition(pixelPosition);
+    if (lineElement == null) {
+      return null;
+    }
+
+    var lineState = lineElement.state as LineWidgetState;
+    var frame = getElementBounds(lineElement);
+    var positionInLine = Offset(
+      pixelPosition.dx - frame.left - LineWidget.leftTextOffset,
+      pixelPosition.dy - frame.top,
     );
-    if (cursorPosition != null && cursorPosition.dy > editorHeight) {
-      scrollController.animateTo(scrollController.offset + (cursorPosition.dy - editorHeight + 20 + 16),
-          duration: const Duration(milliseconds: 100), curve: Curves.linear);
-    }
-    if (cursorPosition != null && cursorPosition.dy < 0) {
-      scrollController.animateTo(scrollController.offset + cursorPosition.dy - 20,
-          duration: const Duration(milliseconds: 100), curve: Curves.linear);
-    }
+
+    return Point<int>(
+      lineState.getCursorOffset(positionInLine),
+      (lineElement.widget as LineWidget).index,
+    );
   }
 
-  //поиск позиции курсора в тексте, который нaходится на координатах position
-  Point<int>? getCursorPositionInText(Offset position, Element element) {
-    Point<int>? result;
+  StatefulElement? findLineElementUnderPosition(Offset position) {
+    var startSearchIndex = max(0, lastPresentedLineIndex - 200);
+    var endSearchIndex = min(editor.file.lines.length, lastPresentedLineIndex + 200);
 
-    if (element.widget is LineWidget && result == null) {
-      var transform = element.renderObject!.getTransformTo(null).getTranslation();
-      var frame = Rect.fromLTWH(
-        transform.x,
-        transform.y,
-        element.renderObject!.paintBounds.width,
-        element.renderObject!.paintBounds.height,
-      );
-
-      if (frame.contains(position) && result == null) {
-        var line = element.widget as LineWidget;
-        var state = (element as StatefulElement).state as LineWidgetState;
-
-        var localPosition = Offset(
-          position.dx - frame.left - LineWidget.leftTextOffset,
-          position.dy - frame.top,
-        );
-
-        result = Point<int>(
-          state.getCursorOffset(localPosition),
-          line.index,
-        );
+    for (int i = startSearchIndex; i < endSearchIndex; i++) {
+      var element = editor.file.lines[i].second.currentContext as StatefulElement?;
+      if (isPositionInWidget(element, position)) {
+        return element;
       }
-    } else {
-      element.visitChildren((child) {
-        result ??= getCursorPositionInText(position, child);
-      });
     }
-    return result;
+
+    return null;
   }
 
-  //поиск позиции курсора на экране, который нaходится на координатах position
-  Offset? getCursorPositionInScreen(Offset position, Element element) {
-    Offset? result;
+  bool isPositionInWidget(StatefulElement? element, Offset position) {
+    if (element == null) {
+      return false;
+    }
 
-    if (element.widget is LineWidget &&
-        result == null &&
-        (element.widget as LineWidget).index == editor.localUser.cursorPosition.y) {
-      var transform = element.renderObject!.getTransformTo(null).getTranslation();
-      var state = (element as StatefulElement).state as LineWidgetState;
-      var lineOffset =
-          state.textPainter.getOffsetForCaret(TextPosition(offset: editor.localUser.cursorPosition.x), Rect.zero);
+    var elementBounds = getElementBounds(element);
+    return elementBounds.contains(position);
+  }
 
-      result = Offset(
-        transform.x + lineOffset.dx + LineWidget.leftTextOffset,
-        transform.y + lineOffset.dy,
+  Rect getElementBounds(StatefulElement element) {
+    var elementPosition = element.renderObject!.getTransformTo(null).getTranslation();
+    var elementSize = element.renderObject!.paintBounds.size;
+
+    return Rect.fromLTWH(elementPosition.x, elementPosition.y, elementSize.width, elementSize.height);
+  }
+
+  Offset? cursorPositionToPixelPosition(Point<int> cursorPosition) {
+    var lineElement = editor.file.lines[cursorPosition.y].second.currentContext as StatefulElement?;
+
+    if (lineElement != null) {
+      var lineWidgetPosition = lineElement.renderObject!.getTransformTo(null).getTranslation().xy;
+      var lineWidgetState = lineElement.state as LineWidgetState;
+
+      var lineOffset = lineWidgetState.textPainter.getOffsetForCaret(
+        TextPosition(offset: cursorPosition.x),
+        Rect.zero,
       );
-    } else {
-      element.visitChildren((child) {
-        result ??= getCursorPositionInScreen(position, child);
-      });
+
+      return Offset(
+        lineWidgetPosition.x + lineOffset.dx + LineWidget.leftTextOffset,
+        lineWidgetPosition.y + lineOffset.dy,
+      );
     }
 
-    return result;
+    return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    editor = EditorInherit.of(context).editor;
-    editor.onUpdate = () {
-      setState(() {});
-    };
-    return Scaffold(
-      body: ChangeNotifierProvider.value(
-        value: editor,
-        child: Column(
-          children: [
-            EditorBar(key: GlobalKey()),
-            Expanded(
-              child: LayoutBuilder(
-                builder: ((context, constraints) {
-                  editorHeight = constraints.maxHeight;
-                  return GestureDetector(
-                    onTapDown: (details) {
-                      textEditorFocus.requestFocus();
-                      context.visitChildElements((element) {
-                        var newPosition = getCursorPositionInText(details.globalPosition, element);
-                        if (newPosition != null) {
-                          // двойной клик и выделение слова
-                          if (newPosition == editor.localUser.cursorPosition &&
-                              DateTime.now().difference(lastTapTime).inMilliseconds < 400) {
-                            int startOfWord =
-                                editor.file.lines[newPosition.y].first.substring(0, newPosition.x).lastIndexOf(' ') + 1;
-                            int endOfWord =
-                                editor.file.lines[newPosition.y].first.substring(newPosition.x).indexOf(' ');
-                            if (endOfWord == -1) {
-                              endOfWord = editor.file.lines[newPosition.y].first.length;
-                            } else {
-                              endOfWord += newPosition.x;
-                            }
-                            editor
-                                .sendJSON(UpdatePositionAction(editor.localUser.name, Point(endOfWord, newPosition.y)));
-                            editor.updateLocalUser(
-                                newSelection:
-                                    Selection(Point(startOfWord, newPosition.y), Point(endOfWord, newPosition.y)));
-                            preffereCursorPositionX = endOfWord;
-                          } else {
-                            // обычный клик
-                            editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
-                            editor.updateLocalUser(newSelection: null);
-                            preffereCursorPositionX = newPosition.x;
-                          }
-                          lastTapTime = DateTime.now();
-                        }
-                      });
-                    },
-                    // начало выделение
-                    onHorizontalDragStart: (details) {
-                      editor.updateLocalUser(newSelection: null);
-                      textEditorFocus.requestFocus();
-                      highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
-                    },
-                    // начало выделение
-                    onVerticalDragStart: (details) {
-                      editor.updateLocalUser(newSelection: null);
-                      textEditorFocus.requestFocus();
-                      highlightStart = getCursorPositionInText(details.globalPosition, context as Element);
-                    },
-                    // отображение выделения
-                    onHorizontalDragUpdate: (details) {
-                      var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
-                      if (highlightStart != null && newPosition != null) {
-                        editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
-                        editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
-                        preffereCursorPositionX = newPosition.x;
-                        //скролл
-                        scrollList(
-                            editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
-                      }
-                    },
-                    // отображение выделения
-                    onVerticalDragUpdate: (details) {
-                      var newPosition = getCursorPositionInText(details.globalPosition, context as Element);
-                      if (highlightStart != null && newPosition != null) {
-                        editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
-                        editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
-                        preffereCursorPositionX = newPosition.x;
-                        //скролл
-                        scrollList(
-                            editor.file.lines[editor.localUser.cursorPosition.y].second.currentContext as Element);
-                      }
-                    },
-                    // конец выделения
-                    onHorizontalDragEnd: (details) {
-                      highlightStart = null;
-                    },
-                    // конец выделения
-                    onVerticalDragEnd: (details) {
-                      highlightStart = null;
-                    },
-                    child: KeyboardListener(
-                      autofocus: true,
-                      focusNode: textEditorFocus,
-                      onKeyEvent: (keyEvent) {
-                        if (keyEvent is! KeyUpEvent) {
-                          // ctrl+V
-                          if (keyEvent.logicalKey == LogicalKeyboardKey.keyV && isCtrlPressed) {
-                            Clipboard.getData(Clipboard.kTextPlain)
-                                .then(
-                                  (value) => editor
-                                      .sendJSON(ReplaceTextAction(editor.localUser.name, value!.text!.split("\n"))),
-                                )
-                                .onError((error, stackTrace) => print("Error in Crtl+V"));
-                            // ctrl+C
-                          } else if (keyEvent.logicalKey == LogicalKeyboardKey.keyC && isCtrlPressed) {
-                            String selectedText = editor.getSelectedText();
-                            if (selectedText != "") {
-                              Clipboard.setData(ClipboardData(text: selectedText));
-                            }
-                            // ввод символа
-                          } else if (keyEvent.character != null &&
-                              keyEvent.logicalKey != LogicalKeyboardKey.enter &&
-                              keyEvent.logicalKey != LogicalKeyboardKey.backspace &&
-                              keyEvent.logicalKey != LogicalKeyboardKey.control) {
-                            editor.sendJSON(ReplaceTextAction(editor.localUser.name, [keyEvent.character!]));
-                            // стирание
-                          } else if (keyEvent.logicalKey == LogicalKeyboardKey.backspace) {
-                            editor.sendJSON(ClearTextAction(editor.localUser.name));
-                            // добавление новой строки
-                          } else if (keyEvent.logicalKey == LogicalKeyboardKey.enter) {
-                            editor.sendJSON(ReplaceTextAction(editor.localUser.name, ["\n"]));
-                          } else if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft ||
-                              keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
-                            isCtrlPressed = true;
-                            // управление стрелочками
-                          } else {
-                            keyboardNavigation(keyEvent);
-                          }
-                        } else {
-                          if (keyEvent.logicalKey == LogicalKeyboardKey.controlLeft ||
-                              keyEvent.logicalKey == LogicalKeyboardKey.controlRight) {
-                            isCtrlPressed = false;
-                          }
-                        }
-                      },
-                      child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 16, bottom: 16),
-                        itemCount: editor.file.lines.length,
-                        itemBuilder: ((context, index) {
-                          return LineWidget(
-                            key: editor.file.lines[index].second,
-                            text: editor.file.lines[index].first,
-                            index: index,
-                            lineWidth: constraints.maxWidth,
-                          );
-                        }),
-                        controller: scrollController,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void updateSelection(Offset position) {
+    var newPosition = pixelPositionToCursorPosition(position);
+
+    if (highlightStart != null && newPosition != null) {
+      editor.sendJSON(UpdatePositionAction(editor.localUser.name, newPosition));
+      editor.updateLocalUser(newSelection: Selection(highlightStart!, newPosition));
+      preffereCursorPositionX = newPosition.x;
+
+      scrollListOnEdges();
+    }
   }
 }

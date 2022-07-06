@@ -18,7 +18,7 @@ class SelectionPainter extends CustomPainter {
   SelectionPainter(this.lineTextPainter, this.users, this.lineIndex) {
     textOffset = Offset(
       LineWidget.leftTextOffset,
-      users.indexWhere((user) => user.cursorPosition.y == lineIndex) != -1 ? 20 : 0,
+      users.indexWhere((user) => user.cursorPosition.y == lineIndex && !user.isLocal) != -1 ? 20 : 0,
     );
   }
 
